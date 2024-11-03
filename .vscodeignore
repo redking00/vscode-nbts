@@ -13,5 +13,8 @@ node_modules
 !node_modules/typescript-deno-plugin/dist/*.js
 !node_modules/typescript-deno-plugin/package.json
 client
+!client/lsp-server/notebook-lsp.ts
+!client/node_modules/vscode-jsonrpc/
+!client/build/
 !client/dist/*.js
 !client/package.json

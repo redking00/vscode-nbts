@@ -7,7 +7,7 @@
 ![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/redking00.vscode-nbts)
 ![Visual Studio Marketplace Rating (Stars)](https://img.shields.io/visual-studio-marketplace/stars/redking00.vscode-nbts)
 
-<img align="right" src=https://raw.githubusercontent.com/denoland/vscode_deno/main/deno.png height="150px">
+<img align="right" src=https://raw.githubusercontent.com/redking00/vscode-nbts/main/deno.png height="150px">
 
 Visual Studio Code plugin for NBTS notebooks (NBTS LSP + NBTS serializer + DenoNBTS kernel) 
 
