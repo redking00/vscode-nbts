@@ -4,7 +4,7 @@
   "description": "Visual Studio Code plugin for NBTS notebooks (NBTS LSP + NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
@@ -94,9 +94,9 @@
     ],
     "commands": [
       {
-        "command": "DenoNBTS.kernel.restart",
+        "command": "deno.kernel.restart",
         "title": "Restart kernel",
-        "category": "DenoNBTS",
+        "category": "Deno",
         "description": "Restart the running instance of the kernel",
         "icon": {
           "light": "resources/light/restart-kernel.svg",
@@ -783,7 +783,7 @@
     "menus": {
       "notebook/toolbar": [
         {
-          "command": "DenoNBTS.kernel.restart",
+          "command": "deno.kernel.restart",
           "title": "Restart kernel",
           "group": "navigation/execute@5"
         }

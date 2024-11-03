@@ -83,18 +83,18 @@ export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
 
-	DenoNBTSController.output.appendLine('DenoNBTS 1.0 is active NOW!!');
-	controllerInstance = new DenoNBTSController(context);
-	context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
-	const controller = vscode.notebooks.createNotebookController(DenoNBTSController.id, 'nbts', DenoNBTSController.label);
-	controller.supportedLanguages = DenoNBTSController.supportedLanguages;
-	controller.executeHandler = (cells, doc, ctrl) => controllerInstance.executeCells(doc, cells, ctrl);
-	controller.interruptHandler = doc => controllerInstance.interrupt(doc);
-	context.subscriptions.push(vscode.commands.registerCommand('DenoNBTS.kernel.restart', () => {
-		if (!!vscode.window.activeNotebookEditor) {
-			controllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
-		}
-	}));  
+  DenoNBTSController.output.appendLine('DenoNBTS 1.0 is active NOW!!');
+  controllerInstance = new DenoNBTSController(context);
+  context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
+  const controller = vscode.notebooks.createNotebookController(DenoNBTSController.id, 'nbts', DenoNBTSController.label);
+  controller.supportedLanguages = DenoNBTSController.supportedLanguages;
+  controller.executeHandler = (cells, doc, ctrl) => controllerInstance.executeCells(doc, cells, ctrl);
+  controller.interruptHandler = doc => controllerInstance.interrupt(doc);
+  context.subscriptions.push(vscode.commands.registerCommand('deno.kernel.restart', () => {
+    if (!!vscode.window.activeNotebookEditor) {
+      controllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
+    }
+  }));
 
 
   extensionContext.outputChannel = extensionContext.outputChannel ??
@@ -213,7 +213,7 @@ export async function activate(
 
   extensionContext.maxTsServerMemory =
     vscode.workspace.getConfiguration(EXTENSION_NS).get("maxTsServerMemory") ??
-      null;
+    null;
   refreshEnableSettings(extensionContext);
 
   extensionContext.tsApi = getTsApi(() => {
@@ -265,8 +265,8 @@ export async function activate(
 }
 
 export function deactivate(): Thenable<void> | undefined {
-  
-	controllerInstance.killAll();
+
+  controllerInstance.killAll();
 
   if (!extensionContext.client) {
     return undefined;
