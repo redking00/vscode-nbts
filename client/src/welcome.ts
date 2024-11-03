@@ -106,11 +106,11 @@ export class WelcomePanel {
       <div class="Header">
         <img src="${logoURI}" alt="Deno Extension Logo" class="Header-logo" />
         <div class="Header-details">
-          <h1 class="Header-title">Deno for VSCode v${denoExtensionVersion}</h1>
-          <p>The official Deno extension for Visual Studio Code, powered by the Deno Language Server.</p>
+          <h1 class="Header-title">VSCode NBTS v${denoExtensionVersion}</h1>
+          <p>Visual Studio Code plugin for NBTS notebooks (NBTS LSP + NBTS serializer + DenoNBTS kernel) </p>
           <ul class="Header-links">
             <li><a href="#" class="Command" data-command="openDocument" data-document="CHANGELOG.md">Change Log</a></li>
-            <li><a href="https://github.com/denoland/vscode_deno/">GitHub</a></li>
+            <li><a href="https://github.com/redking00/vscode-nbts/">GitHub</a></li>
             <li><a href="https://discord.gg/deno">Discord</a></li>
           </ul>
         </div>

@@ -15,7 +15,9 @@
   ],
   "exclude": [
     "node_modules",
-    ".vscode-test"
+    ".vscode-test",
+    "resources",
+    "vscode-deno-3.42.0.vsix.folder"
   ],
   "references": [
     {

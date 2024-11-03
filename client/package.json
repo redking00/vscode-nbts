@@ -11,17 +11,21 @@
     "url": "https://github.com/denoland/vscode_deno"
   },
   "engines": {
-    "vscode": "^1.60.0"
+    "vscode": "^1.93.1"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
     "jsonc-parser": "^3.2.0",
     "semver": "7.5.2",
-    "vscode-languageclient": "^8.0.1"
+    "vscode-languageclient": "^8.0.1",
+    "@jupyterlab/nbformat": "^4.2.5",
+    "@lumino/coreutils": "^2.2.0",
+    "zeromq": "^6.0.8",
+    "vscode-jsonrpc":"9.0.0-next.6"
   },
   "devDependencies": {
     "@types/semver": "7.3.9",
-    "@types/vscode": "1.67.0",
-    "vscode-test": "^1.6.1"
+    "@types/vscode": "^1.93.1",
+    "vscode-test": "1.6.1"
   }
 }

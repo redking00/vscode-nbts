@@ -1,10 +1,10 @@
 {
-  "name": "vscode-deno",
-  "displayName": "Deno",
-  "description": "A language server client for Deno.",
-  "author": "Deno Land Inc.",
+  "name": "vscode-nbts",
+  "displayName": "DenoNBTS",
+  "description": "Visual Studio Code plugin for NBTS notebooks (NBTS LSP + NBTS serializer + DenoNBTS kernel)",
+  "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "3.42.0",
+  "version": "0.0.1",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
@@ -12,13 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/denoland/vscode_deno"
+    "url": "https://github.com/redking00/vscode-nbts"
   },
   "bugs": {
-    "url": "https://github.com/denoland/vscode_deno/issues"
+    "url": "https://github.com/redking00/vscode_deno/issues"
   },
-  "publisher": "denoland",
+  "publisher": "redking00",
   "categories": [
+    "Notebooks",
     "Programming Languages",
     "Formatters",
     "Linters",
@@ -29,7 +30,7 @@
     "deno"
   ],
   "engines": {
-    "vscode": "^1.60.0"
+    "vscode": "^1.93.1"
   },
   "activationEvents": [
     "onLanguage:typescript",
@@ -53,6 +54,17 @@
   ],
   "main": "./client/dist/main",
   "contributes": {
+    "notebooks": [
+      {
+        "type": "nbts",
+        "displayName": "Deno TS Notebooks",
+        "selector": [
+          {
+            "filenamePattern": "*.nb.ts"
+          }
+        ]
+      }
+    ],    
     "breakpoints": [
       {
         "language": "typescript"
@@ -81,6 +93,16 @@
       }
     ],
     "commands": [
+      {
+        "command": "DenoNBTS.kernel.restart",
+        "title": "Restart kernel",
+        "category": "DenoNBTS",
+        "description": "Restart the running instance of the kernel",
+        "icon": {
+          "light": "resources/light/restart-kernel.svg",
+          "dark": "resources/dark/restart-kernel.svg"
+        }
+      },      
       {
         "command": "deno.client.cacheActiveDocument",
         "title": "Cache Dependencies",
@@ -759,6 +781,13 @@
       ]
     },
     "menus": {
+      "notebook/toolbar": [
+        {
+          "command": "DenoNBTS.kernel.restart",
+          "title": "Restart kernel",
+          "group": "navigation/execute@5"
+        }
+      ],
       "commandPalette": [
         {
           "command": "deno.client.runTask",
@@ -817,7 +846,22 @@
           "group": "inline"
         }
       ]
-    }
+    },
+    "enabledApiProposals": [
+      "notebookDeprecated",
+      "notebookMessaging",
+      "notebookMime",
+      "contribNotebookStaticPreloads",
+      "portsAttributes",
+      "quickPickSortByLabel",
+      "notebookKernelSource",
+      "interactiveWindow",
+      "quickPickItemTooltip",
+      "notebookExecution",
+      "notebookCellExecution",
+      "notebookVariableProvider",
+      "notebookReplDocument"
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm i && npm run esbuild-plugin && npm i && npm run esbuild-base",

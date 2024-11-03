@@ -2,10 +2,10 @@
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/denoland/vscode_deno/ci.yml?branch=main)
 
-![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/denoland.vscode-deno)
-![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/denoland.vscode-deno)
-![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/denoland.vscode-deno)
-![Visual Studio Marketplace Rating (Stars)](https://img.shields.io/visual-studio-marketplace/stars/denoland.vscode-deno)
+![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/redking00.vscode-nbts)
+![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/redking00.vscode-nbts)
+![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/redking00.vscode-nbts)
+![Visual Studio Marketplace Rating (Stars)](https://img.shields.io/visual-studio-marketplace/stars/redking00.vscode-nbts)
 
 <img align="right" src=https://raw.githubusercontent.com/denoland/vscode_deno/main/deno.png height="150px">
 
@@ -88,7 +88,7 @@ up a default formatter for these type of files, the extension should be listed
 as an option.
 
 When configuring a formatter, you use the extension name, which in the case of
-this extension is `denoland.vscode-deno`. For example, to configure Deno to
+this extension is `redking00.vscode-nbts`. For example, to configure Deno to
 format your TypeScript files automatically on saving, you might set your
 `settings.json` in the workspace like this:
 
@@ -97,7 +97,7 @@ format your TypeScript files automatically on saving, you might set your
   "deno.enable": true,
   "deno.lint": true,
   "editor.formatOnSave": true,
-  "[typescript]": { "editor.defaultFormatter": "denoland.vscode-deno" }
+  "[typescript]": { "editor.defaultFormatter": "redking00.vscode-nbts" }
 }
 ```
 
@@ -107,7 +107,7 @@ Or if you wanted to have Deno be your default formatter overall:
 {
   "deno.enable": true,
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "denoland.vscode-deno"
+  "editor.defaultFormatter": "redking00.vscode-nbts"
 }
 ```
 

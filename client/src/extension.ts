@@ -18,6 +18,11 @@ import * as util from "util";
 import * as vscode from "vscode";
 import { registerSidebar } from "./tasks_sidebar";
 
+import { NBTSSerializer } from './serializer/nbts-serializer';
+import { DenoNBTSController } from './controller/deno-nbts-controller';
+
+let controllerInstance: DenoNBTSController;
+
 function handleConfigurationChange(event: vscode.ConfigurationChangeEvent) {
   if (
     [EXTENSION_NS, "javascript", "typescript"].some((s) =>
@@ -77,6 +82,21 @@ const extensionContext = {} as DenoExtensionContext;
 export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
+
+	DenoNBTSController.output.appendLine('DenoNBTS 1.0 is active NOW!!');
+	controllerInstance = new DenoNBTSController(context);
+	context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
+	const controller = vscode.notebooks.createNotebookController(DenoNBTSController.id, 'nbts', DenoNBTSController.label);
+	controller.supportedLanguages = DenoNBTSController.supportedLanguages;
+	controller.executeHandler = (cells, doc, ctrl) => controllerInstance.executeCells(doc, cells, ctrl);
+	controller.interruptHandler = doc => controllerInstance.interrupt(doc);
+	context.subscriptions.push(vscode.commands.registerCommand('DenoNBTS.kernel.restart', () => {
+		if (!!vscode.window.activeNotebookEditor) {
+			controllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
+		}
+	}));  
+
+
   extensionContext.outputChannel = extensionContext.outputChannel ??
     vscode.window.createOutputChannel(LANGUAGE_CLIENT_NAME);
   const p2cMap = new Map<string, string>();
@@ -245,6 +265,9 @@ export async function activate(
 }
 
 export function deactivate(): Thenable<void> | undefined {
+  
+	controllerInstance.killAll();
+
   if (!extensionContext.client) {
     return undefined;
   }

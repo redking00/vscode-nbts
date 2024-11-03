@@ -1,7 +1,7 @@
 # Change Log
 
 Releases of the extension can be downloaded from
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno).
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=redking00.vscode-nbts).
 
 ### [3.42.0](https://github.com/denoland/vscode_deno/compare/3.41.1...3.42.0) / 2024.10.13
 
@@ -445,7 +445,7 @@ feat: enable inlay hints by default (#759)
 
 ### [3.0.1](https://github.com/denoland/vscode_deno/compare/3.0.0...3.0.1) / 2021.02.19
 
-- fix: EXTENSION_ID corrected to denoland.vscode-deno extension (#333)
+- fix: EXTENSION_ID corrected to redking00.vscode-nbts extension (#333)
 
 ### [3.0.0](https://github.com/denoland/vscode_deno/compare/canary/0.0.10...3.0.0) / 2021.02.19
 
