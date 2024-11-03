@@ -242,13 +242,15 @@ const onDenoResponse = async (req: PendingRequest | undefined, data: any) => {
       };
     }
     else if (req.method === 'textDocument/hover' || req.method === 'textDocument/implementation' || req.method === 'textDocument/definition') {
-      const tdUri = (req.params as any).textDocument.uri;
-      if (tdUri) {
-        const notebook = getNotebookByTextDocumentUri(tdUri);
-        if (notebook) {
-          const startLine = getStartLine(notebook, tdUri)!;
-          data.result.range.start.line -= startLine;
-          data.result.range.end.line -= startLine;
+      if (data.result && data.result.range) {
+        const tdUri = (req.params as any).textDocument.uri;
+        if (tdUri) {
+          const notebook = getNotebookByTextDocumentUri(tdUri);
+          if (notebook) {
+            const startLine = getStartLine(notebook, tdUri)!;
+            data.result.range.start.line -= startLine;
+            data.result.range.end.line -= startLine;
+          }
         }
       }
     }
@@ -281,11 +283,13 @@ const onDenoResponse = async (req: PendingRequest | undefined, data: any) => {
       }
     }
     else if (req && (req.method === 'textDocument/semanticTokens/full')) {
-      const tdUri = (req.params as any).textDocument.uri;
-      if (tdUri) {
-        const notebook = getNotebookByTextDocumentUri(tdUri);
-        if (notebook) {
-          data.result.data = [];
+      if (data.result) {
+        const tdUri = (req.params as any).textDocument.uri;
+        if (tdUri) {
+          const notebook = getNotebookByTextDocumentUri(tdUri);
+          if (notebook) {
+            data.result.data = [];
+          }
         }
       }
     }
