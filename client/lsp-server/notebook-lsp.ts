@@ -2,12 +2,6 @@ import * as NodeStream from 'node:stream';
 import { StreamMessageReader, StreamMessageWriter } from "npm:vscode-jsonrpc@9.0.0-next.6/node";
 
 
-const pendingRequests: Record<string, {
-  id: number
-  method: string
-  params: string
-}> = {};
-
 type nbNotebook = {
   uri: string
   textDocuments: nbTextDocument[]
@@ -19,6 +13,14 @@ type nbTextDocument = {
   languageId: string
   lines: string[]
 }
+
+type PendingRequest = {
+  id: number
+  method: string
+  params: string
+}
+
+const pendingRequests: Record<string, PendingRequest> = {};
 
 const notebooks: Record<string, nbNotebook> = {}
 
@@ -139,7 +141,6 @@ const onIdeNotification = async (data: any) => {
         delete documentXnotebook[t.uri];
       }
       const msg = { jsonrpc: "2.0", method: "textDocument/didClose", params: { uri: notebook.uri } } as any
-      //log(`IDE NOTIFICATION HOOKED\n${msg.method}\n${JSON.stringify(msg.params)}`);
       await denoIn.write(msg);
       delete notebooks[data.params.notebookDocument.uri];
     }
@@ -224,52 +225,48 @@ const onDenoRequest = async (data: any) => {
   await ideIn.write(data);
 }
 
-const onDenoResponse = async (data: any) => {
-  if (data.result?.capabilities !== undefined) {
-    data.result.capabilities.notebookDocumentSync = {
-      notebookSelector: [
-        {
-          notebook: { scheme: 'file', notebookType: 'nbts' },
-          cells: [{ language: 'typescript' }, { language: 'markdown' }]
-        },
-        {
-          notebook: { scheme: 'file', notebookType: 'jupyter-notebook' },
-          cells: [{ language: 'typescript' }, { language: 'markdown' }]
-        }
-      ]
-    };
-  }
-  else if (data.result?.range !== undefined) {
-    const req = pendingRequests[data.id.toString()];
-    if (req) {
-      if (req.method === 'textDocument/hover' || req.method === 'textDocument/implementation' || req.method === 'textDocument/definition') {
-        const tdUri = (req.params as any).textDocument.uri;
-        if (tdUri) {
-          const notebook = getNotebookByTextDocumentUri(tdUri);
-          if (notebook) {
-            const startLine = getStartLine(notebook, tdUri)!;
-            data.result.range.start.line -= startLine;
-            data.result.range.end.line -= startLine;
+const onDenoResponse = async (req: PendingRequest | undefined, data: any) => {
+  if (req) {
+    if (req.method === 'initialize') {
+      data.result.capabilities.notebookDocumentSync = {
+        notebookSelector: [
+          {
+            notebook: { scheme: 'file', notebookType: 'nbts' },
+            cells: [{ language: 'typescript' }, { language: 'markdown' }]
+          },
+          {
+            notebook: { scheme: 'file', notebookType: 'jupyter-notebook' },
+            cells: [{ language: 'typescript' }, { language: 'markdown' }]
           }
-        }
-      }
+        ]
+      };
     }
-  }
-  else if (data.result && data.result.length > 0) {
-    const req = pendingRequests[data.id.toString()];
-    if (req && req.method === 'textDocument/foldingRange') {
+    else if (req.method === 'textDocument/hover' || req.method === 'textDocument/implementation' || req.method === 'textDocument/definition') {
       const tdUri = (req.params as any).textDocument.uri;
       if (tdUri) {
         const notebook = getNotebookByTextDocumentUri(tdUri);
         if (notebook) {
-          const td = notebook.textDocuments.find(d => d.uri === tdUri);
-          if (td) {
-            const startLine = getStartLine(notebook, tdUri)!;
-            data.result = data.result.map((r: any) => {
-              r.startLine -= startLine;
-              r.endLine -= startLine;
-              return r;
-            }).filter((r: any) => r.startLine >= 0 && r.startLine < (td.lines.length));
+          const startLine = getStartLine(notebook, tdUri)!;
+          data.result.range.start.line -= startLine;
+          data.result.range.end.line -= startLine;
+        }
+      }
+    }
+    else if (req.method === 'textDocument/foldingRange') {
+      if (data.result && data.result.length > 0) {
+        const tdUri = (req.params as any).textDocument.uri;
+        if (tdUri) {
+          const notebook = getNotebookByTextDocumentUri(tdUri);
+          if (notebook) {
+            const td = notebook.textDocuments.find(d => d.uri === tdUri);
+            if (td) {
+              const startLine = getStartLine(notebook, tdUri)!;
+              data.result = data.result.map((r: any) => {
+                r.startLine -= startLine;
+                r.endLine -= startLine;
+                return r;
+              }).filter((r: any) => r.startLine >= 0 && r.startLine < (td.lines.length));
+            }
           }
         }
       }
@@ -283,10 +280,7 @@ const onDenoResponse = async (data: any) => {
         }
       }
     }
-  }
-  else if (data.result && data.result.data) {
-    const req = pendingRequests[data.id.toString()];
-    if (req && (req.method === 'textDocument/semanticTokens/full')) {
+    else if (req && (req.method === 'textDocument/semanticTokens/full')) {
       const tdUri = (req.params as any).textDocument.uri;
       if (tdUri) {
         const notebook = getNotebookByTextDocumentUri(tdUri);
@@ -296,7 +290,6 @@ const onDenoResponse = async (data: any) => {
       }
     }
   }
-
   await ideIn.write(data);
 }
 
@@ -333,13 +326,13 @@ const onDenoUnknown = async (data: any) => {
 ideOut.listen((data: any) => {
   if (data.method !== undefined) {
     if (data.id !== undefined) {
-      pendingRequests[data.id.toString()] = JSON.parse(JSON.stringify(data));
+      pendingRequests[`${data.id}`] = JSON.parse(JSON.stringify(data));
       onIdeRequest(data);
     }
     else {
       onIdeNotification(data);
       if (data.method === '$/cancelRequest') {
-        delete pendingRequests[data.params.id.toString()];
+        delete pendingRequests[`${data.params.id}`];
       }
     }
   }
@@ -361,8 +354,9 @@ denoOut.listen((data: any) => {
     }
   }
   else if (data.result !== undefined) {
-    onDenoResponse(data);
-    delete pendingRequests[data.id.toString()];
+    const req = pendingRequests[`${data.id}`];
+    onDenoResponse(req, data);
+    delete pendingRequests[`${data.id}`];
   }
   else {
     onDenoUnknown(data);
