@@ -15,6 +15,6 @@ node_modules
 client
 !client/lsp-server/notebook-lsp.ts
 !client/node_modules/vscode-jsonrpc/
-!client/build/
+!client/prebuilds/
 !client/dist/*.js
 !client/package.json
