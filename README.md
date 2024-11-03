@@ -1,4 +1,4 @@
-# Deno for Visual Studio Code
+# VSCode NBTS
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/denoland/vscode_deno/ci.yml?branch=main)
 
@@ -8,6 +8,8 @@
 ![Visual Studio Marketplace Rating (Stars)](https://img.shields.io/visual-studio-marketplace/stars/redking00.vscode-nbts)
 
 <img align="right" src=https://raw.githubusercontent.com/denoland/vscode_deno/main/deno.png height="150px">
+
+Visual Studio Code plugin for NBTS notebooks (NBTS LSP + NBTS serializer + DenoNBTS kernel) 
 
 This extension adds support for using [Deno](https://deno.com/) with Visual
 Studio Code, powered by the Deno language server.
