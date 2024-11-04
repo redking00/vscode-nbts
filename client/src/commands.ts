@@ -170,13 +170,13 @@ export function startLanguageServer(
       run: {
         command,
         //args: ["lsp"],
-        args: ['--allow-env', '--allow-run', lspPath, JSON.stringify(env)],
+        args: ['--allow-env', '--allow-run', '--allow-read', lspPath, JSON.stringify(env)],
         options: { env },
       },
       debug: {
         command,
         //args: ["lsp"],        
-        args: ['--allow-env', '--allow-run', lspPath, JSON.stringify(env)],
+        args: ['--allow-env', '--allow-run', '--allow-read', lspPath, JSON.stringify(env)],
         // disabled for now, as this gets super chatty during development
         // args: ["lsp", "-L", "debug"],
         options: { env },

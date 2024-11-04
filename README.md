@@ -1,7 +1,10 @@
 # VSCode NBTS #
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/denoland/vscode_deno/ci.yml?branch=main)
+**This is a fork of the original denoland's Deno extension.**
 
+This extension adds support for deno lsp on notebooks. 
+
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/denoland/vscode_deno/ci.yml?branch=main)
 ![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/redking00.vscode-nbts)
 ![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/redking00.vscode-nbts)
 ![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/redking00.vscode-nbts)
@@ -9,12 +12,12 @@
 
 <img align="right" src=https://raw.githubusercontent.com/redking00/vscode-nbts/main/deno.png height="150px">
 
-## Visual Studio Code plugin for NBTS notebooks (DenoNBTS LSP + NBTS serializer + DenoNBTS kernel)
+## Visual Studio Code plugin for NBTS notebooks (DenoNBTS LSP + DenoNBTS serializer + DenoNBTS kernel)
 
-This extension adds support for Deno LSP on notebooks. It also defines a new notebook type (***.nb.ts**). This way you can use "import" between notebooks.
-Lastly, it also adds a notebook controller for vscode, so you can use deno's jupyter kernel in vscode without Python.
+This extension adds support for deno lsp on notebooks. It also defines a new notebook type (***.nb.ts**). This way you can use "import" between notebooks.
+Lastly, it also adds a notebook controller for VSCode, so you can use Deno's jupyter kernel in VSCode without Python.
 
-You just have to install the vsix file of the extension, look at the releases section. No need for Jupyter or any other extension (**deno must be in the path**).
+Just install the extension, look at the releases section. No need for Jupyter or any other extension (**deno must be in the path or deno.path config option setted**).
 
 > ⚠️ **Important:**
 > Remember deno.enable:true in the workspace that contains the notebooks. The best way is to use the command _Deno: Initialize
@@ -66,7 +69,7 @@ Studio Code, powered by the Deno language server.
 
 1. Install the Deno CLI.
 2. Install this extension.
-3. **Ensure `deno` is available in the environment path** ~~, or set its path via the
+3. Ensure `deno` is available in the environment path, or set its path via the
    `deno.path` setting in VSCode.~~
 4. Open the VS Code command palette with `Ctrl+Shift+P`, and run the _Deno:
    Enable_ command.

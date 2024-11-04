@@ -52,7 +52,7 @@ const applyTextChanges = (textDocument: nbTextDocument, changes: { range: { star
   }
 }
 
-const cp = new Deno.Command('deno', {
+const cp = new Deno.Command(Deno.execPath(), {
   args: ['lsp'],
   stdin: 'piped',
   stdout: 'piped',
