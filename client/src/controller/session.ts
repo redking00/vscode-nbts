@@ -32,7 +32,7 @@ export class Session {
     private shellConnectResolver: any;
     private shellConnect: Promise<void>;
     private totalErrors = 0;
-    private static totalSessions: number = 0;
+    private static sessionNumber: number = Math.floor(Math.random() * 20000);
     private connectionFolder: string;
 
     private async launchDenoKernel(cwd: string) {
@@ -107,11 +107,11 @@ export class Session {
         this.currentDocument = doc;
         this.outputChannel = outputChannel;
         this.key = UUID.uuid4();
-        this.ioPubPort = 40885 + Session.totalSessions;
-        this.shellPort = 40886 + Session.totalSessions;
-        this.controlPort = 40887 + Session.totalSessions;
-        this.hbPort = 40888 + Session.totalSessions;
-        this.stdinPort = 40889 + Session.totalSessions;
+        this.ioPubPort = 40885 + Session.sessionNumber;
+        this.shellPort = 40886 + Session.sessionNumber;
+        this.controlPort = 40887 + Session.sessionNumber;
+        this.hbPort = 40888 + Session.sessionNumber;
+        this.stdinPort = 40889 + Session.sessionNumber;
         this.controlSock = new zmq.Dealer();
         this.shellSock = new zmq.Dealer();
         this.ioPubSock = new zmq.Subscriber();
@@ -149,7 +149,7 @@ export class Session {
         this.ioPubSock.subscribe();
 
 
-        Session.totalSessions = (Session.totalSessions + 5) % 20000;
+        Session.sessionNumber = (Session.sessionNumber + 5) % 20000;
 
         let connection_data: any = {
             control_port: this.controlPort,
