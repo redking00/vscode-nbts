@@ -1,8 +1,13 @@
-# VSCode NBTS #
-
-**This is a fork of the original denoland's Deno extension.**
+# DenoNBTS #
 
 This extension adds support for deno lsp on notebooks. 
+
+**DenoNBTS is a fork of the original denoland's _Deno_ extension.**
+
+> ⚠️ **Important:**
+>
+>
+> **If the _Deno_ extension is installed, you must disable it before enabling DenoNBTS**
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/denoland/vscode_deno/ci.yml?branch=main)
 ![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/redking00.vscode-nbts)
@@ -12,7 +17,8 @@ This extension adds support for deno lsp on notebooks.
 
 <img align="right" src=https://raw.githubusercontent.com/redking00/vscode-nbts/main/deno.png height="150px">
 
-## Visual Studio Code plugin for NBTS notebooks (DenoNBTS LSP + DenoNBTS serializer + DenoNBTS kernel)
+
+## VSCode plugin for NBTS notebooks (lsp + serializer + kernel)
 
 This extension adds support for deno lsp on notebooks. It also defines a new notebook type (***.nb.ts**). This way you can use "import" between notebooks.
 Lastly, it also adds a notebook controller for VSCode, so you can use Deno's jupyter kernel in VSCode without Python.
