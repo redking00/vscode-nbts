@@ -4,7 +4,7 @@
   "description": "Visual Studio Code plugin for NBTS notebooks (NBTS LSP + NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
@@ -33,6 +33,7 @@
     "vscode": "^1.93.1"
   },
   "activationEvents": [
+    "onNotebook:nbts",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
     "onLanguage:javascript",
@@ -64,7 +65,7 @@
           }
         ]
       }
-    ],    
+    ],
     "breakpoints": [
       {
         "language": "typescript"
@@ -102,7 +103,7 @@
           "light": "resources/light/restart-kernel.svg",
           "dark": "resources/dark/restart-kernel.svg"
         }
-      },      
+      },
       {
         "command": "deno.client.cacheActiveDocument",
         "title": "Cache Dependencies",
@@ -279,7 +280,9 @@
           "markdownDescription": "Additional environment variables to pass to Deno processes. Overrides the user's env and `deno.envFile`. These will be overridden by more specific settings such as `deno.future` for `DENO_FUTURE`, and invariables like `NO_COLOR=1`.",
           "scope": "window",
           "examples": [
-            { "HTTP_PROXY": "http://localhost:8080" }
+            {
+              "HTTP_PROXY": "http://localhost:8080"
+            }
           ]
         },
         "deno.envFile": {
@@ -500,7 +503,11 @@
           "scope": "resource"
         },
         "deno.trace.server": {
-          "enum": ["messages", "off", "verbose"],
+          "enum": [
+            "messages",
+            "off",
+            "verbose"
+          ],
           "default": "off",
           "markdownDescription": "Traces the communication between VS Code and the Deno Language Server.",
           "scope": "window"
