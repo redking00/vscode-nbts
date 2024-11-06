@@ -264,7 +264,9 @@ export class Session {
                 return;
             }
         }
+        this.isOk = true;
         for (const cell of cells) {
+            if (!this.isOk) { break };
             const exec = ctrl.createNotebookCellExecution(cell);
             await this.execute(exec);
         }
