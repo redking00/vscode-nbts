@@ -82,24 +82,21 @@ export class Session {
         const wmsg = m.encode("sha256", this.key);
         let idle = new Promise<boolean>((resolve) => { this.resolver = resolve; });
         await this.shellSock!.send(wmsg);
-        let response: Message | null = null;
         this.isOk = false;
         if (!this.stopped) {
             for await (const msg of this.shellSock!) {
                 //this.outputChannel.appendLine("\n### SHELLSOCK RECEIVE");
-                response = Message.decode(msg, "sha256", this.key);
+                const response: Message = Message.decode(msg, "sha256", this.key);
                 //this.outputChannel.appendLine(response);
+                if (response.content.status === 'error') {
+                    this.isOk = false;
+                }
+                else if (response.content.status === 'ok') {
+                    this.isOk = true;
+                }
+                await idle;
                 break;
             }
-        }
-        if (!!response) {
-            if (response.content.status === 'error') {
-                this.isOk = false;
-            }
-            else if (response.content.status === 'ok') {
-                this.isOk = true;
-            }
-            await idle;
         }
     }
 
@@ -202,7 +199,7 @@ export class Session {
                     ]);
                 }
                 else if (msg?.header.msg_type === 'error') {
-                    let str = `${msg.content.traceback.slice(1).join('\n')}`;
+                    let str = msg.content.traceback.length > 0 ? `${msg.content.traceback.slice(1).join('\n')}` : msg.content.evalue;
                     this.currentExecution?.appendOutput([
                         new vscode.NotebookCellOutput([
                             vscode.NotebookCellOutputItem.stderr(str)

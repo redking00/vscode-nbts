@@ -2,5 +2,8 @@
   "editor.insertSpaces": false,
   "typescript.tsc.autoDetect": "off",
   "typescript.tsdk": "./node_modules/typescript/lib",
-  "typescript.preferences.quoteStyle": "double"
+  "typescript.preferences.quoteStyle": "double",
+  "deno.enable": true,
+  "typescript.validate.enable": false,
+  "files.eol": "\n"
 }
