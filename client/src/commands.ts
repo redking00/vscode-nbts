@@ -176,7 +176,7 @@ export function startLanguageServer(
       debug: {
         command,
         //args: ["lsp"],        
-        args: ['--allow-env', '--allow-run', '--allow-read', lspPath, JSON.stringify(env)],
+        args: ['--allow-env', '--allow-run', '--allow-read', '--inspect', lspPath, JSON.stringify(env)],
         // disabled for now, as this gets super chatty during development
         // args: ["lsp", "-L", "debug"],
         options: { env },
@@ -659,6 +659,7 @@ export function enable(
     const config = vscode.workspace.getConfiguration(EXTENSION_NS);
     await config.update("enable", true);
     await vscode.workspace.getConfiguration('typescript.validate').update('enable', false);
+    await vscode.workspace.getConfiguration('files').update('eol', '\n');
     vscode.window.showInformationMessage("Deno workspace initialized.");
     const tsserverConfig = vscode.workspace.getConfiguration(
       "typescript.tsserver",
@@ -688,8 +689,9 @@ export function disable(
 ) {
   return async () => {
     const config = vscode.workspace.getConfiguration(EXTENSION_NS);
-    await config.update("enable", false);
-    await vscode.workspace.getConfiguration('typescript.validate').update('enable', true);
+    await config.update("enable", undefined);
+    await vscode.workspace.getConfiguration('typescript.validate').update('enable', undefined);
+    await vscode.workspace.getConfiguration('files').update('eol', undefined);
   };
 }
 

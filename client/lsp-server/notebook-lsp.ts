@@ -149,9 +149,7 @@ const onIdeNotification = async (data: any) => {
   else if (data.method === "notebookDocument/didChange") {
     const notebook = notebooks[data.params.notebookDocument.uri];
     if (notebook) {
-      let processed = false;
       if (data.params.change?.cells?.textContent !== undefined) {
-        processed = true;
         let changed = false;
         for (const tc of data.params.change.cells.textContent) {
           const textDocument = notebook.textDocuments.find(t => t.uri === tc.document.uri);
@@ -174,8 +172,6 @@ const onIdeNotification = async (data: any) => {
         }
       }
       if (data.params.change?.cells?.structure !== undefined) {
-        processed = true;
-
         notebook.textDocuments = [
           ...notebook.textDocuments.slice(0, data.params.change.cells.structure.array.start),
           ...(
@@ -206,8 +202,6 @@ const onIdeNotification = async (data: any) => {
         } as any;
         await denoIn.write(msg);
 
-      }
-      if (!processed) {
       }
     }
   }
