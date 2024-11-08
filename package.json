@@ -4,7 +4,7 @@
   "description": "Visual Studio Code plugin for NBTS notebooks (NBTS LSP + NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",

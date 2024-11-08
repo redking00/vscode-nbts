@@ -41,12 +41,17 @@ const getStartLine = (notebook: nbNotebook, textDocumentUri: string) => {
   }
 }
 
-const applyTextChanges = (textDocument: nbTextDocument, changes: { range: { start: { line: number, character: number } }, rangeLength: number, text: string }[]) => {
+const applyTextChanges = (textDocument: nbTextDocument, changes: { range: { start: { line: number, character: number }, end: { line: number, character: number } }, rangeLength: number, text: string }[]) => {
   for (const change of changes) {
     if (change.range !== undefined) {
-      let text = textDocument.lines.splice(change.range.start.line).join('\n');
-      text = [text.substring(0, change.range.start.character), change.text, text.substring(change.range.start.character + change.rangeLength)].join('');
-      textDocument.lines.push(...text.split('\n'));
+      let startLn = `${textDocument.lines[change.range.start.line]}\n`.substring(0, change.range.start.character);
+      let endLn = textDocument.lines[change.range.end.line].substring(change.range.end.character);
+      const substition = `${startLn}${change.text.replaceAll('\r\n', '\n')}${endLn}`;
+      textDocument.lines = [
+        ...textDocument.lines.slice(0, change.range.start.line),
+        ...substition.split('\n'),
+        ...textDocument.lines.slice(change.range.end.line + 1)
+      ];
     }
     else { throw Error("UNKNOWN CHANGE TYPE"); }
   }
