@@ -659,6 +659,7 @@ export function enable(
     const config = vscode.workspace.getConfiguration(EXTENSION_NS);
     await config.update("enable", true);
     await vscode.workspace.getConfiguration('typescript.validate').update('enable', false);
+    await vscode.workspace.getConfiguration('files').update('eol', '\n');
     vscode.window.showInformationMessage("Deno workspace initialized.");
     const tsserverConfig = vscode.workspace.getConfiguration(
       "typescript.tsserver",
@@ -690,6 +691,7 @@ export function disable(
     const config = vscode.workspace.getConfiguration(EXTENSION_NS);
     await config.update("enable", undefined);
     await vscode.workspace.getConfiguration('typescript.validate').update('enable', undefined);
+    await vscode.workspace.getConfiguration('files').update('eol', undefined);
   };
 }
 

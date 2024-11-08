@@ -45,12 +45,7 @@ const applyTextChanges = (textDocument: nbTextDocument, changes: { range: { star
   for (const change of changes) {
     if (change.range !== undefined) {
       let text = textDocument.lines.splice(change.range.start.line).join('\n');
-      const changedText = change.text.replaceAll('\r\n', '\n');
-      text = [
-        text.substring(0, change.range.start.character),
-        changedText,
-        text.substring(change.range.start.character + change.rangeLength - (change.text.length - changedText.length))
-      ].join('');
+      text = [text.substring(0, change.range.start.character), change.text, text.substring(change.range.start.character + change.rangeLength)].join('');
       textDocument.lines.push(...text.split('\n'));
     }
     else { throw Error("UNKNOWN CHANGE TYPE"); }
