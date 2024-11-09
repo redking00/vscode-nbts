@@ -50,9 +50,8 @@ export class DenoNBTSController {
     }
 
     public killAll(signal?: NodeJS.Signals | number) {
-        DenoNBTSController.output.appendLine('\n### KILL\'EM ALL');
         for (let session of this.sessions.values()) {
-            session.kill();
+            session.kill(signal);
         }
     }
 

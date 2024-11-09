@@ -83,7 +83,7 @@ export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
 
-  DenoNBTSController.output.appendLine('DenoNBTS 1.0 is active NOW!!');
+  DenoNBTSController.output.appendLine('DenoNBTS 1.0.0 is active NOW!!');
   controllerInstance = new DenoNBTSController(context);
   context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
   const controller = vscode.notebooks.createNotebookController(DenoNBTSController.id, 'nbts', DenoNBTSController.label);
@@ -266,7 +266,7 @@ export async function activate(
 
 export function deactivate(): Thenable<void> | undefined {
 
-  controllerInstance.killAll();
+  controllerInstance.killAll("SIGTERM");
 
   if (!extensionContext.client) {
     return undefined;

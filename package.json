@@ -1,10 +1,10 @@
 {
   "name": "vscode-nbts",
   "displayName": "DenoNBTS",
-  "description": "Visual Studio Code plugin for NBTS notebooks (NBTS LSP + NBTS serializer + DenoNBTS kernel)",
+  "description": "Visual Studio Code plugin for Deno lsp suppor on notebooks (+ NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "0.0.12",
+  "version": "1.0.0",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
@@ -46,11 +46,6 @@
     "onDebugResolve:typescriptreact",
     "onDebugResolve:javascript",
     "onDebugResolve:javascriptreact",
-    "onCommand:deno.client.welcome",
-    "onCommand:deno.client.enable",
-    "onCommand:deno.client.disable",
-    "onCommand:deno.client.clearHiddenPromptStorage",
-    "onCommand:deno.reloadImportRegistries",
     "onWebviewPanel:welcomeDeno"
   ],
   "main": "./client/dist/main",
@@ -792,7 +787,8 @@
         {
           "command": "deno.kernel.restart",
           "title": "Restart kernel",
-          "group": "navigation/execute@5"
+          "group": "navigation/execute@5",
+          "when": "notebookType == nbts && isWorkspaceTrusted"
         }
       ],
       "commandPalette": [

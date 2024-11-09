@@ -41,7 +41,15 @@ const getStartLine = (notebook: nbNotebook, textDocumentUri: string) => {
   }
 }
 
-const applyTextChanges = (textDocument: nbTextDocument, changes: { range: { start: { line: number, character: number }, end: { line: number, character: number } }, rangeLength: number, text: string }[]) => {
+type TextChange = {
+  range: {
+    start: { line: number, character: number },
+    end: { line: number, character: number }
+  },
+  text: string
+}
+
+const applyTextChanges = (textDocument: nbTextDocument, changes: TextChange[]) => {
   for (const change of changes) {
     if (change.range !== undefined) {
       let startLn = `${textDocument.lines[change.range.start.line]}\n`.substring(0, change.range.start.character);
@@ -52,6 +60,9 @@ const applyTextChanges = (textDocument: nbTextDocument, changes: { range: { star
         ...substition.split('\n'),
         ...textDocument.lines.slice(change.range.end.line + 1)
       ];
+    }
+    else if (change.text !== undefined) {
+      textDocument.lines = change.text.replaceAll('\r\n', '\n').split('\n');
     }
     else { throw Error("UNKNOWN CHANGE TYPE"); }
   }
@@ -71,6 +82,7 @@ const ideOut = new StreamMessageReader(NodeStream.Readable.fromWeb(Deno.stdin.re
 const ideIn = new StreamMessageWriter(NodeStream.Writable.fromWeb(Deno.stdout.writable));
 
 const onIdeRequest = async (data: any) => {
+  //console.trace(`IDE REQUEST  [${data.method}][${data.id}]`);
   if (
     data.method === 'textDocument/codeAction' ||
     data.method === 'textDocument/inlayHint' ||
@@ -119,6 +131,7 @@ const onIdeResponse = async (data: any) => {
 }
 
 const onIdeNotification = async (data: any) => {
+  //console.trace(`IDE NOTIFIC  [${data.method}]`);
   if (data.method === "notebookDocument/didOpen") {
     let notebook = notebooks[data.params.notebookDocument.uri];
     if (notebook === undefined) {
@@ -216,11 +229,13 @@ const onIdeNotification = async (data: any) => {
 }
 
 const onIdeUnknown = async (data: any) => {
+  //console.trace(`IDE UNKNOWN`);
   await denoIn.write(data);
 }
 
 
 const onDenoRequest = async (data: any) => {
+  //console.trace(`DENO REQUEST [${data.method}][${data.id}]`);
   await ideIn.write(data);
 }
 
@@ -297,6 +312,7 @@ const onDenoResponse = async (req: PendingRequest | undefined, data: any) => {
 }
 
 const onDenoNotification = async (data: any) => {
+  //console.trace(`DENO NOTIFIC [${data.method}]`);
   if (data.method === 'textDocument/publishDiagnostics') {
     const notebook = notebooks[data.params.uri];
     if (notebook !== undefined) {
@@ -322,6 +338,7 @@ const onDenoNotification = async (data: any) => {
 }
 
 const onDenoUnknown = async (data: any) => {
+  //console.trace(`DENO UNKNOWN`);
   await ideIn.write(data);
 }
 
