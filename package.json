@@ -1,7 +1,7 @@
 {
   "name": "vscode-nbts",
   "displayName": "DenoNBTS",
-  "description": "Visual Studio Code plugin for Deno lsp suppor on notebooks (+ NBTS serializer + DenoNBTS kernel)",
+  "description": "Visual Studio Code plugin for Deno lsp support on notebooks (+ NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
   "version": "1.0.0",
