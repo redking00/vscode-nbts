@@ -150,8 +150,10 @@ const onIdeNotification = async (data: any) => {
       const msg = { jsonrpc: "2.0", method: "textDocument/didOpen", params: { textDocument: { uri: notebook.uri, languageId: 'typescript', version: notebook.version, text: fullText } } } as any;
       await denoIn.write(msg);
     }
+    else {
+      await denoIn.write(data);
+    }
   }
-
   else if (data.method === "notebookDocument/didClose") {
     const notebook = notebooks[data.params.notebookDocument.uri];
     if (notebook !== undefined) {
@@ -162,8 +164,10 @@ const onIdeNotification = async (data: any) => {
       await denoIn.write(msg);
       delete notebooks[data.params.notebookDocument.uri];
     }
+    else {
+      await denoIn.write(data);
+    }
   }
-
   else if (data.method === "notebookDocument/didChange") {
     const notebook = notebooks[data.params.notebookDocument.uri];
     if (notebook) {
@@ -208,7 +212,6 @@ const onIdeNotification = async (data: any) => {
         if (data.params.change.cells.structure.didClose) {
           data.params.change.cells.structure.didClose.forEach((d: any) => delete documentXnotebook[d.uri]);
         }
-
         const fullText = getFullText(notebook);
         const msg = {
           jsonrpc: "2.0",
@@ -219,8 +222,10 @@ const onIdeNotification = async (data: any) => {
           }
         } as any;
         await denoIn.write(msg);
-
       }
+    }
+    else {
+      await denoIn.write(data);
     }
   }
   else {
@@ -330,6 +335,9 @@ const onDenoNotification = async (data: any) => {
         };
         await ideIn.write(msg);
       }
+    }
+    else {
+      await ideIn.write(data);
     }
   }
   else {
