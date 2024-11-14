@@ -1,0 +1,21 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"hostRequirements": {
+	  "cpus": 4
+	},
+	"workspaceMount": "source=${localWorkspaceFolder}/devcontainer-root,target=/workspace,type=bind",
+	"workspaceFolder": "/workspace",
+	"waitFor": "onCreateCommand",
+	"updateContentCommand": "curl -fsSLO https://deno.land/install.sh && sh ./install.sh -y && rm install.sh",
+	"postCreateCommand": "",
+	"customizations": {
+	  "codespaces": {
+		"openFiles": []
+	  },
+	  "vscode": {
+		"extensions": [
+		 "redking00.vscode-nbts"
+		]
+	  }
+	}
+  }

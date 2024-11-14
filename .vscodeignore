@@ -2,6 +2,8 @@
 .gitignore
 .vscode
 *.vsix
+.devcontainer
+devcontainer-root
 out
 docs
 screenshots
