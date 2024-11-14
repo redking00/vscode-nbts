@@ -1,6 +1,6 @@
 # DenoNBTS #
 
-This extension adds support for deno lsp on notebooks. 
+This extension adds support for deno lsp on notebooks. [Try me on Codespaces!](https://github.com/redking00/vscode-nbts-codespaces)
 
 **DenoNBTS is a fork of the original denoland's _Deno_ extension.**
 
