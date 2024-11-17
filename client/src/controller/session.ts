@@ -86,7 +86,7 @@ export class Session {
         if (!this.stopped) {
             for await (const msg of this.shellSock!) {
                 //this.outputChannel.appendLine("\n### SHELLSOCK RECEIVE");
-                const response: Message = Message.decode(msg, "sha256", this.key);
+                const response: Message = Message.decode(msg, "sha256", this.key)!;
                 //this.outputChannel.appendLine(response);
                 if (response.content.status === 'error') {
                     this.isOk = false;
@@ -180,8 +180,22 @@ export class Session {
         return this.proc?.kill(signal) || false;
     }
 
-    public start() {
+    private processOutput(data: any) {
+        return new vscode.NotebookCellOutput([...Object.keys(data)].map((mime) => {
+            if (mime.includes("json")) {
+                return vscode.NotebookCellOutputItem.json(data[mime], mime);
+            }
+            else if (mime.startsWith("image")) {
+                let buff = Buffer.from(data[mime], 'base64');
+                return new vscode.NotebookCellOutputItem(buff, mime);
+            }
+            else {
+                return vscode.NotebookCellOutputItem.text(data[mime], mime);
+            }
+        }));
+    }
 
+    public start() {
         //this.outputChannel.appendLine("\n### STARTING SESSION");
         this.stopped = false;
         const listener = async () => {
@@ -190,13 +204,11 @@ export class Session {
                 const msg = Message.decode(buffers, "sha256", this.key);
                 if (msg?.header.msg_type === 'execute_result') {
                     let data = msg.content.data;
-                    //this.outputChannel.appendLine(typeof data);
-                    //this.outputChannel.appendLine(data);
-                    this.currentExecution?.appendOutput([
-                        new vscode.NotebookCellOutput([
-                            vscode.NotebookCellOutputItem.stdout(data['text/plain']),
-                        ])
-                    ]);
+                    this.currentExecution?.appendOutput([this.processOutput(data)]);
+                }
+                else if (msg?.header.msg_type === 'display_data') {
+                    let data = msg.content.data;
+                    this.currentExecution?.appendOutput([this.processOutput(data)]);
                 }
                 else if (msg?.header.msg_type === 'error') {
                     let str = msg.content.traceback.length > 0 ? `${msg.content.traceback.slice(1).join('\n')}` : msg.content.evalue;
@@ -236,8 +248,9 @@ export class Session {
                     // do nothing 
                 }
                 else {
-                    this.outputChannel.appendLine("UNPROCESSED IOPUB MSG, SEE DEBUG LOG");
-                    console.log(msg);
+                    this.outputChannel.appendLine("------------------------------");
+                    this.outputChannel.appendLine("UNPROCESSED IOPUB MSG");
+                    this.outputChannel.appendLine(JSON.stringify(msg));
                 }
             }
         };
