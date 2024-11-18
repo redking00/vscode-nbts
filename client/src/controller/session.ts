@@ -194,10 +194,7 @@ export class Session {
             results = data;
         }
         return new vscode.NotebookCellOutput([...Object.keys(results)].map((mime) => {
-            if (
-                mime.includes("json") ||
-                mime.startsWith("x-application/github-issues")
-            ) {
+            if (mime.includes("json")) {
                 return vscode.NotebookCellOutputItem.json(results[mime], mime);
             }
             else if (mime.startsWith("image")) {
