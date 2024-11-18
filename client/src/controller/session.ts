@@ -181,16 +181,31 @@ export class Session {
     }
 
     private processOutput(data: any) {
-        return new vscode.NotebookCellOutput([...Object.keys(data)].map((mime) => {
-            if (mime.includes("json")) {
-                return vscode.NotebookCellOutputItem.json(data[mime], mime);
+        let results: Record<string, string> = {};
+        if (data.other) {
+            results = {};
+            while (data.other.length > 1) {
+                const mime = data.other.shift();
+                const value = data.other.shift();
+                results[mime] = value;
+            }
+        }
+        else {
+            results = data;
+        }
+        return new vscode.NotebookCellOutput([...Object.keys(results)].map((mime) => {
+            if (
+                mime.includes("json") ||
+                mime.startsWith("x-application/github-issues")
+            ) {
+                return vscode.NotebookCellOutputItem.json(results[mime], mime);
             }
             else if (mime.startsWith("image")) {
-                let buff = Buffer.from(data[mime], 'base64');
+                let buff = Buffer.from(results[mime], 'base64');
                 return new vscode.NotebookCellOutputItem(buff, mime);
             }
             else {
-                return vscode.NotebookCellOutputItem.text(data[mime], mime);
+                return vscode.NotebookCellOutputItem.text(results[mime], mime);
             }
         }));
     }
