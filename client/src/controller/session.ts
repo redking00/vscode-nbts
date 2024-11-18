@@ -194,12 +194,15 @@ export class Session {
             results = data;
         }
         return new vscode.NotebookCellOutput([...Object.keys(results)].map((mime) => {
-            if (mime.includes("json")) {
-                return vscode.NotebookCellOutputItem.json(results[mime], mime);
+            if (mime === "image/svg+xml") {
+                return vscode.NotebookCellOutputItem.text(results[mime], mime);
             }
             else if (mime.startsWith("image")) {
                 let buff = Buffer.from(results[mime], 'base64');
                 return new vscode.NotebookCellOutputItem(buff, mime);
+            }
+            else if (mime.includes("json")) {
+                return vscode.NotebookCellOutputItem.json(results[mime], mime);
             }
             else {
                 return vscode.NotebookCellOutputItem.text(results[mime], mime);
