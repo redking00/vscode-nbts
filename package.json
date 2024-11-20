@@ -4,7 +4,7 @@
   "description": "Visual Studio Code plugin for Deno lsp support on notebooks (+ NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
@@ -36,6 +36,7 @@
   },
   "activationEvents": [
     "onNotebook:nbts",
+    "onNotebook:jupyter-notebook",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
     "onLanguage:javascript",
@@ -790,7 +791,7 @@
           "command": "deno.kernel.restart",
           "title": "Restart kernel",
           "group": "navigation/execute@5",
-          "when": "notebookType == nbts && isWorkspaceTrusted"
+          "when": "notebookKernel =~ /deno-nbts-kernel.*/ && isWorkspaceTrusted"
         }
       ],
       "commandPalette": [

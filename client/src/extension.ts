@@ -86,10 +86,17 @@ export async function activate(
   DenoNBTSController.output.appendLine('DenoNBTS 1.0.0 is active NOW!!');
   controllerInstance = new DenoNBTSController(context);
   context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
+
   const controller = vscode.notebooks.createNotebookController(DenoNBTSController.id, 'nbts', DenoNBTSController.label);
   controller.supportedLanguages = DenoNBTSController.supportedLanguages;
   controller.executeHandler = (cells, doc, ctrl) => controllerInstance.executeCells(doc, cells, ctrl);
   controller.interruptHandler = doc => controllerInstance.interrupt(doc);
+
+  const controller2 = vscode.notebooks.createNotebookController(`${DenoNBTSController.id}-jupyter`, 'jupyter-notebook', DenoNBTSController.label);
+  controller2.supportedLanguages = DenoNBTSController.supportedLanguages;
+  controller2.executeHandler = (cells, doc, ctrl) => controllerInstance.executeCells(doc, cells, ctrl);
+  controller2.interruptHandler = doc => controllerInstance.interrupt(doc);
+
   context.subscriptions.push(vscode.commands.registerCommand('deno.kernel.restart', () => {
     if (!!vscode.window.activeNotebookEditor) {
       controllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
