@@ -1,5 +1,7 @@
 # DenoNBTS #
 
+<img align="right" src=https://raw.githubusercontent.com/redking00/vscode-nbts/main/deno.png height="150px">
+
 This extension adds support for deno lsp on notebooks. [Try me on Codespaces!](https://github.com/redking00/vscode-nbts-codespaces)
 
 **DenoNBTS is a fork of the original denoland's _Deno_ extension.**
@@ -14,9 +16,6 @@ This extension adds support for deno lsp on notebooks. [Try me on Codespaces!](h
 ![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/redking00.vscode-nbts)
 ![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/redking00.vscode-nbts)
 ![Visual Studio Marketplace Rating (Stars)](https://img.shields.io/visual-studio-marketplace/stars/redking00.vscode-nbts)
-
-<img align="right" src=https://raw.githubusercontent.com/redking00/vscode-nbts/main/deno.png height="150px">
-
 
 ## VSCode plugin for NBTS notebooks (lsp + serializer + kernel)
 
