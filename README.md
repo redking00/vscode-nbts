@@ -17,7 +17,7 @@ This extension adds support for deno lsp on notebooks. [Try me on Codespaces!](h
 ![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/redking00.vscode-nbts)
 ![Visual Studio Marketplace Rating (Stars)](https://img.shields.io/visual-studio-marketplace/stars/redking00.vscode-nbts)
 
-## VSCode plugin for NBTS notebooks (lsp + serializer + kernel)
+## VSCode plugin for pure Typescript JUPYTER and NBTS notebooks (lsp + serializer + kernel)
 
 This extension adds support for deno lsp on notebooks. It also defines a new notebook type (***.nb.ts**). This way you can use "import" between notebooks.
 Lastly, it also adds a notebook controller for VSCode, so you can use Deno's jupyter kernel in VSCode without Python.
