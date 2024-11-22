@@ -21,10 +21,8 @@ export class KernelConnection {
     }
 
     public tryClose() {
-        if (!this.stopped) {
-            this.shellChannel.close();
-            this.ioPubChannel.close();
-        }
+        this.shellChannel.close();
+        this.ioPubChannel.close();
         this.stopped = true;
     }
 

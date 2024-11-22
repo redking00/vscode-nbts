@@ -17,15 +17,14 @@ class _KernelChannel {
         this.port = port;
         this.connected = new Promise<void>((resolve) => {
             this.socket.events.on('connect', () => {
+                this.totalErrors = 0;
                 if (this.socket instanceof zmq.Subscriber) {
                     this.socket.subscribe();
                 }
                 resolve();
             });
-            this.totalErrors = 0;
         });
         this.socket.events.on('connect:retry', () => {
-            console.log('socket connect retry');
             this.totalErrors++;
             if (this.totalErrors > 100 && this.totalErrors < 102) {
                 this.onError();
@@ -56,7 +55,7 @@ export class ShellKernelChannel extends _KernelChannel {
         this.key = key;
     }
 
-    public async executeRequest (idle: Promise<void>, sessionId: string, code: string) {
+    public async executeRequest(idle: Promise<void>, sessionId: string, code: string) {
         const msg = KernelMessage.createMessage<KernelMessage.IExecuteRequestMsg>({
             msgId: UUID.uuid4(),
             msgType: 'execute_request',

@@ -53,8 +53,8 @@ export class DenoNBTSController {
         await session.executeCells(doc, cells, ctrl);
     }
 
-    public killAll(signal?: NodeJS.Signals | number) {
-        [...Object.keys(this.sessions)].forEach(fsPath => this.killSession(fsPath));
+    public killAll() {
+        [...this.sessions.keys()].forEach((fsPath) => this.killSession(fsPath));
     }
 
     public killSession(fsPath: string) {

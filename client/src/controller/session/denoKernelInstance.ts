@@ -18,7 +18,7 @@ export class DenoKernelInstance {
     private idle?: Promise<void>
     private idleResolver?: () => void
     private currentExecution?: vscode.NotebookCellExecution
-    private stopped:boolean = false;
+    private stopped: boolean = false;
 
     private static processOutput(data: any) {
         let results: Record<string, string> = {};
@@ -130,6 +130,7 @@ export class DenoKernelInstance {
         this.proc = DenoTool.syncLaunch(['jupyter', '--kernel', '--conn', fileName], cwd)!;
         this.outputChannel.appendLine(JSON.stringify(this.proc));
         this.proc!.on("exit", () => {
+            if (!this.stopped) onError();
             this.outputChannel.appendLine('\n### DENO EXITED');
             try {
                 if (typeof this.connectionFolder === "string" && this.connectionFolder.length > 0) {
@@ -139,8 +140,7 @@ export class DenoKernelInstance {
                 }
             }
             catch (err) { this.outputChannel.appendLine(`${err}`); }
-            if (!this.stopped) onError();
-            
+
         });
         this.kernelConnection = new KernelConnection(onError, this.onIOPubMessage, this.key, ioPubPort, shellPort);
     }

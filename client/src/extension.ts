@@ -274,7 +274,7 @@ export async function activate(
 
 export function deactivate(): Thenable<void> | undefined {
 
-  controllerInstance.killAll("SIGTERM");
+  controllerInstance.killAll();
 
   if (!extensionContext.client) {
     return undefined;

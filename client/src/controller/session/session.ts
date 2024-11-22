@@ -45,9 +45,7 @@ export class Session {
     }
 
     public tryClose() {
-        if (!this.stopped) {
-            this.denoInstance.tryClose();
-        }
+        this.denoInstance.tryClose();
         this.stopped = true;
     }
 
