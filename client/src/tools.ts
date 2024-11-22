@@ -55,6 +55,15 @@ export class DenoTool {
         return proc.spawn(kernelPath, args, { cwd: cwd });
     }
 
+    static syncLaunch(args: string[], cwd: string) {
+        const kernelPath:string = this.config.get('path')||'deno'
+        if (!kernelPath) {
+            vscode.window.showErrorMessage(`No path to deno executable`);
+            return;
+        }
+        return proc.execFile(kernelPath, args, { cwd: cwd });
+    }
+
     static async exec(args: string[]) {
         const kernelPath = await this.path;
         if (!kernelPath) {

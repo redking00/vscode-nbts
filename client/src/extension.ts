@@ -98,7 +98,8 @@ export async function activate(
   controller2.interruptHandler = doc => controllerInstance.interrupt(doc);
 
   context.subscriptions.push(vscode.commands.registerCommand('deno.kernel.restart', () => {
-    if (!!vscode.window.activeNotebookEditor) {
+    if (vscode.window.activeNotebookEditor) {
+      vscode.window.showInformationMessage(`Kernel restarted`);
       controllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
     }
   }));

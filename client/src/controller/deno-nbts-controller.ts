@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { Session } from './session';
+import { Session } from './session/session';
 
 export class DenoNBTSController {
 
@@ -11,6 +11,11 @@ export class DenoNBTSController {
     private context: vscode.ExtensionContext;
     private sessions = new Map<string, Session>();
 
+
+    private onSessionClose = (fsPath: string) => {
+        this.sessions.delete(fsPath);
+    }
+
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         setInterval(() => {
@@ -18,7 +23,7 @@ export class DenoNBTSController {
                 let entries = [...this.sessions.entries()];
                 let closed = entries.filter((entry) => entry[1].isDocumentClosed());
                 for (let e of closed) {
-                    e[1].kill();
+                    e[1].tryClose();
                     this.sessions.delete(e[0]);
                 }
             }
@@ -43,22 +48,21 @@ export class DenoNBTSController {
     ): Promise<void> {
         let session = this.sessions.get(doc.uri.fsPath);
         if (!session) {
-            session = new Session(doc, DenoNBTSController.output);
+            session = new Session(() => this.onSessionClose(doc.uri.fsPath), doc, DenoNBTSController.output);
             this.sessions.set(doc.uri.fsPath, session);
+            await session.start();
         }
         await session.executeCells(doc, cells, ctrl);
     }
 
     public killAll(signal?: NodeJS.Signals | number) {
-        for (let session of this.sessions.values()) {
-            session.kill(signal);
-        }
+        [...Object.keys(this.sessions)].forEach(key => this.killSession(key));
     }
 
     public killSession(uri: string) {
         const session = this.sessions.get(uri);
         if (session) {
-            session.kill();
+            session.tryClose();
             this.sessions.delete(uri);
         }
     }
