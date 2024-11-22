@@ -150,6 +150,9 @@ export class DenoKernelInstance {
     }
 
     public tryClose() {
+        if (this.currentExecution) {
+            try { this.currentExecution.end(false); } catch (_) { }
+        }
         this.stopped = true;
         this.proc.kill("SIGTERM");
         this.kernelConnection.tryClose();
