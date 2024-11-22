@@ -5,10 +5,11 @@ import { DenoKernelInstance } from "./denoKernelInstance";
 
 export class Session {
     private static sessionNumber: number = Math.floor(Math.random() * 20000);
-    private closeNotifier: () => void;
     private denoInstance: DenoKernelInstance;
     private currentDocument: vscode.NotebookDocument;
     private outputChannel: vscode.OutputChannel;
+    private stopped: boolean = false;
+    private started: boolean = false;
 
     private async execute(exec: vscode.NotebookCellExecution) {
         exec.start();
@@ -18,13 +19,12 @@ export class Session {
         return result;
     }
 
-    constructor(closeNotifier: () => void, doc: vscode.NotebookDocument, outputChannel: vscode.OutputChannel) {
-        this.closeNotifier = closeNotifier;
+    constructor(onError: () => void, doc: vscode.NotebookDocument, outputChannel: vscode.OutputChannel) {
         Session.sessionNumber = (Session.sessionNumber + 5) % 20000;
         this.currentDocument = doc;
         this.outputChannel = outputChannel;
         this.denoInstance = new DenoKernelInstance(
-            this.closeNotifier,
+            onError,
             doc.uri.fsPath.split(path.sep).slice(0, -1).join(path.sep) + path.sep,
             40885 + Session.sessionNumber,
             40886 + Session.sessionNumber,
@@ -37,15 +37,18 @@ export class Session {
 
     public async start() {
         await this.denoInstance.start();
+        this.started = true;
     }
-
 
     public isDocumentClosed() {
         return this.currentDocument.isClosed;
     }
 
     public tryClose() {
-        this.denoInstance.tryClose();
+        if (!this.stopped) {
+            this.denoInstance.tryClose();
+        }
+        this.stopped = true;
     }
 
     public async executeCells(
@@ -54,9 +57,11 @@ export class Session {
         ctrl: vscode.NotebookController
     ): Promise<void> {
         for (const cell of cells) {
-            const exec = ctrl.createNotebookCellExecution(cell);
-            const isOk = await this.execute(exec);
-            if (!isOk) { break };
+            if (this.started && !this.stopped) {
+                const exec = ctrl.createNotebookCellExecution(cell);
+                const isOk = await this.execute(exec);
+                if (!isOk) { break };
+            }
         }
     }
 }

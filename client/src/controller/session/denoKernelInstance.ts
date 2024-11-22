@@ -4,12 +4,12 @@ import * as path from 'path';
 import { ChildProcess } from 'child_process';
 import { DenoTool } from "../../tools";
 import { UUID } from '@lumino/coreutils';
-import { Message } from '../jmp';
+import { Message } from './jmp';
 import { mkdtempSync, writeFileSync, realpathSync, rmdirSync, rmSync } from "fs";
 import { KernelConnection } from "./kernelConnection";
 
 export class DenoKernelInstance {
-    private closeNotifier: () => void
+
     private proc: ChildProcess
     private key: string
     private kernelConnection: KernelConnection
@@ -18,10 +18,7 @@ export class DenoKernelInstance {
     private idle?: Promise<void>
     private idleResolver?: () => void
     private currentExecution?: vscode.NotebookCellExecution
-
-    private onKernelConnectionClose = () => {
-        this.closeProc();
-    }
+    private stopped:boolean = false;
 
     private static processOutput(data: any) {
         let results: Record<string, string> = {};
@@ -103,13 +100,8 @@ export class DenoKernelInstance {
     }
 
 
-    private closeProc() {
-        this.proc.kill("SIGTERM");
-        this.closeNotifier();
-    }
-
     constructor(
-        closeNotifier: () => void,
+        onError: () => void,
         cwd: string,
         ioPubPort: number,
         shellPort: number,
@@ -118,7 +110,6 @@ export class DenoKernelInstance {
         stdinPort: number,
         outputChannel: vscode.OutputChannel
     ) {
-        this.closeNotifier = closeNotifier;
         this.outputChannel = outputChannel;
         this.key = UUID.uuid4();
         this.connectionFolder = mkdtempSync(realpathSync(os.tmpdir()) + path.sep);
@@ -148,8 +139,10 @@ export class DenoKernelInstance {
                 }
             }
             catch (err) { this.outputChannel.appendLine(`${err}`); }
+            if (!this.stopped) onError();
+            
         });
-        this.kernelConnection = new KernelConnection(this.onKernelConnectionClose, this.onIOPubMessage, this.key, ioPubPort, shellPort);
+        this.kernelConnection = new KernelConnection(onError, this.onIOPubMessage, this.key, ioPubPort, shellPort);
     }
 
     public async start() {
@@ -157,7 +150,9 @@ export class DenoKernelInstance {
     }
 
     public tryClose() {
-        this.closeProc();
+        this.stopped = true;
+        this.proc.kill("SIGTERM");
+        this.kernelConnection.tryClose();
     }
 
     public async executeRequest(sessionId: string, exec: vscode.NotebookCellExecution) {

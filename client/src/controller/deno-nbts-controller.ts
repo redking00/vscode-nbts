@@ -12,9 +12,7 @@ export class DenoNBTSController {
     private sessions = new Map<string, Session>();
 
 
-    private onSessionClose = (fsPath: string) => {
-        this.sessions.delete(fsPath);
-    }
+    private onError = (fsPath: string) => this.killSession(fsPath)
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -48,7 +46,7 @@ export class DenoNBTSController {
     ): Promise<void> {
         let session = this.sessions.get(doc.uri.fsPath);
         if (!session) {
-            session = new Session(() => this.onSessionClose(doc.uri.fsPath), doc, DenoNBTSController.output);
+            session = new Session(() => this.onError(doc.uri.fsPath), doc, DenoNBTSController.output);
             this.sessions.set(doc.uri.fsPath, session);
             await session.start();
         }
@@ -56,14 +54,14 @@ export class DenoNBTSController {
     }
 
     public killAll(signal?: NodeJS.Signals | number) {
-        [...Object.keys(this.sessions)].forEach(key => this.killSession(key));
+        [...Object.keys(this.sessions)].forEach(fsPath => this.killSession(fsPath));
     }
 
-    public killSession(uri: string) {
-        const session = this.sessions.get(uri);
+    public killSession(fsPath: string) {
+        const session = this.sessions.get(fsPath);
         if (session) {
             session.tryClose();
-            this.sessions.delete(uri);
+            this.sessions.delete(fsPath);
         }
     }
 
