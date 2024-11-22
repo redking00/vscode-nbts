@@ -17,15 +17,11 @@ export class DenoNBTSController {
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         setInterval(() => {
-            try {
-                let entries = [...this.sessions.entries()];
-                let closed = entries.filter((entry) => entry[1].isDocumentClosed());
-                for (let e of closed) {
-                    e[1].tryClose();
-                    this.sessions.delete(e[0]);
-                }
-            }
-            catch (e) { DenoNBTSController.output.appendLine(`${e}`); }
+            const closed: [string, Session][] = [...this.sessions.entries()].filter(([_fsPath, session]) => session.isDocumentClosed());
+            closed.forEach(([fsPath, session]) => {
+                session.tryClose();
+                this.sessions.delete(fsPath);
+            });
         }, 1000);
     }
 
