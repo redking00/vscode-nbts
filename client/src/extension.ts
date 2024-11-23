@@ -91,25 +91,37 @@ export async function activate(
 
   context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
 
-  const controller = vscode.notebooks.createNotebookController(KernelController.id, 'nbts', KernelController.label);
-  controller.supportedLanguages = KernelController.supportedLanguages;
-  controller.executeHandler = (cells, doc, ctrl) => kernelControllerInstance.executeCells(doc, cells, ctrl);
-  controller.interruptHandler = doc => kernelControllerInstance.interrupt(doc);
+  const controller1 = vscode.notebooks.createNotebookController(KernelController.id, 'nbts', KernelController.label);
+  controller1.supportedLanguages = KernelController.supportedLanguages;
+  controller1.interruptHandler = doc => kernelControllerInstance.interrupt(doc);
+  controller1.executeHandler = (cells, doc, ctrl) => {
+    replControllerInstance.killSession(doc.uri.fsPath);
+    return kernelControllerInstance.executeCells(doc, cells, ctrl)
+  };
 
   const controller2 = vscode.notebooks.createNotebookController(`${KernelController.id}-jupyter`, 'jupyter-notebook', KernelController.label);
   controller2.supportedLanguages = KernelController.supportedLanguages;
-  controller2.executeHandler = (cells, doc, ctrl) => kernelControllerInstance.executeCells(doc, cells, ctrl);
   controller2.interruptHandler = doc => kernelControllerInstance.interrupt(doc);
+  controller2.executeHandler = (cells, doc, ctrl) => {
+    replControllerInstance.killSession(doc.uri.fsPath);
+    return kernelControllerInstance.executeCells(doc, cells, ctrl)
+  };
 
   const controller3 = vscode.notebooks.createNotebookController(REPLController.id, 'nbts', REPLController.label);
   controller3.supportedLanguages = REPLController.supportedLanguages;
-  controller3.executeHandler = (cells, doc, ctrl) => replControllerInstance.executeCells(doc, cells, ctrl);
   controller3.interruptHandler = doc => replControllerInstance.interrupt(doc);
+  controller3.executeHandler = (cells, doc, ctrl) => {
+    kernelControllerInstance.killSession(doc.uri.fsPath);
+    return replControllerInstance.executeCells(doc, cells, ctrl)
+  };
 
   const controller4 = vscode.notebooks.createNotebookController(`${REPLController.id}-jupyter`, 'jupyter-notebook', REPLController.label);
   controller4.supportedLanguages = REPLController.supportedLanguages;
-  controller4.executeHandler = (cells, doc, ctrl) => replControllerInstance.executeCells(doc, cells, ctrl);
   controller4.interruptHandler = doc => replControllerInstance.interrupt(doc);
+  controller4.executeHandler = (cells, doc, ctrl) => {
+    kernelControllerInstance.killSession(doc.uri.fsPath);
+    return replControllerInstance.executeCells(doc, cells, ctrl)
+  };
 
   context.subscriptions.push(vscode.commands.registerCommand('deno.kernel.restart', () => {
     if (vscode.window.activeNotebookEditor) {

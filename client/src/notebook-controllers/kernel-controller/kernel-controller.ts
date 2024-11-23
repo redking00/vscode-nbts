@@ -24,7 +24,7 @@ export class KernelController implements IController {
     }
 
     public get output() {
-        const value = vscode.window.createOutputChannel("DenoNBTS(kernel)");
+        const value = vscode.window.createOutputChannel("DenoNBTS(main)");
         Object.defineProperty(this, "output", { value });
         return value;
     }
