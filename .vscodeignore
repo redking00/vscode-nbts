@@ -14,9 +14,12 @@ typescript-deno-plugin
 node_modules
 !node_modules/typescript-deno-plugin/dist/*.js
 !node_modules/typescript-deno-plugin/package.json
+!node_modules/zeromq/package.json
+!node_modules/zeromq/lib/
+!node_modules/zeromq/prebuilds/
+!node_modules/@aminya/node-gyp-build/
 client
 !client/lsp-server/notebook-lsp.ts
 !client/node_modules/vscode-jsonrpc/
-!client/prebuilds/
 !client/dist/*.js
 !client/package.json
