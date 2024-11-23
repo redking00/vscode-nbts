@@ -19,7 +19,7 @@ node_modules
 !node_modules/zeromq/prebuilds/
 !node_modules/@aminya/node-gyp-build/
 client
-!client/lsp-server/notebook-lsp.ts
-!client/node_modules/vscode-jsonrpc/
 !client/dist/*.js
 !client/package.json
+!client/lsp-server/notebook-lsp.ts
+!client/node_modules/vscode-jsonrpc/

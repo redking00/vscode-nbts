@@ -2,11 +2,11 @@ import * as vscode from "vscode";
 import * as os from 'os';
 import * as path from 'path';
 import { ChildProcess } from 'child_process';
-import { DenoTool } from "../../tools";
+import { DenoTool } from "../../../tools";
 import { UUID } from '@lumino/coreutils';
 import { Message } from './jmp';
 import { mkdtempSync, writeFileSync, realpathSync, rmdirSync, rmSync } from "fs";
-import { KernelConnection } from "./kernelConnection";
+import { KernelConnection } from "./kernel-connection";
 
 export class DenoKernelInstance {
 

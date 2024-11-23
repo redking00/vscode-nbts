@@ -1,4 +1,4 @@
-import { ShellKernelChannel, IOPubKernelChannel } from "./kernelChannel";
+import { ShellKernelChannel, IOPubKernelChannel } from "./kernel-channel";
 import { Message } from './jmp';
 
 export class KernelConnection {

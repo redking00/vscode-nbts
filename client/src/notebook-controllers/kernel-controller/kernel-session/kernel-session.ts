@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
 import * as path from 'path';
-import { DenoKernelInstance } from "./denoKernelInstance";
+import { ISession } from "../../types";
+import { DenoKernelInstance } from "./deno-kernel-instance";
 
 
-export class Session {
+export class KernelSession implements ISession {
     private static sessionNumber: number = Math.floor(Math.random() * 20000);
     private denoInstance: DenoKernelInstance;
     private currentDocument: vscode.NotebookDocument;
@@ -20,17 +21,17 @@ export class Session {
     }
 
     constructor(onError: () => void, doc: vscode.NotebookDocument, outputChannel: vscode.OutputChannel) {
-        Session.sessionNumber = (Session.sessionNumber + 5) % 20000;
+        KernelSession.sessionNumber = (KernelSession.sessionNumber + 5) % 20000;
         this.currentDocument = doc;
         this.outputChannel = outputChannel;
         this.denoInstance = new DenoKernelInstance(
             onError,
             doc.uri.fsPath.split(path.sep).slice(0, -1).join(path.sep) + path.sep,
-            40885 + Session.sessionNumber,
-            40886 + Session.sessionNumber,
-            40887 + Session.sessionNumber,
-            40888 + Session.sessionNumber,
-            40889 + Session.sessionNumber,
+            40885 + KernelSession.sessionNumber,
+            40886 + KernelSession.sessionNumber,
+            40887 + KernelSession.sessionNumber,
+            40888 + KernelSession.sessionNumber,
+            40889 + KernelSession.sessionNumber,
             this.outputChannel
         );
     }

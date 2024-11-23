@@ -18,10 +18,13 @@ import * as util from "util";
 import * as vscode from "vscode";
 import { registerSidebar } from "./tasks_sidebar";
 
-import { NBTSSerializer } from './serializer/nbts-serializer';
-import { DenoNBTSController } from './controller/deno-nbts-controller';
+import { NBTSSerializer } from './notebook-serializers/nbts-serializer/nbts-serializer';
+import { KernelController } from './notebook-controllers/kernel-controller/kernel-controller';
+import { REPLController } from './notebook-controllers/repl-controller/repl-controller';
 
-let controllerInstance: DenoNBTSController;
+
+let kernelControllerInstance: KernelController;
+let replControllerInstance: REPLController;
 
 function handleConfigurationChange(event: vscode.ConfigurationChangeEvent) {
   if (
@@ -83,24 +86,36 @@ export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
 
-  DenoNBTSController.output.appendLine('DenoNBTS 1.0.0 is active NOW!!');
-  controllerInstance = new DenoNBTSController(context);
+  kernelControllerInstance = new KernelController();
+  replControllerInstance = new REPLController();
+
   context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
 
-  const controller = vscode.notebooks.createNotebookController(DenoNBTSController.id, 'nbts', DenoNBTSController.label);
-  controller.supportedLanguages = DenoNBTSController.supportedLanguages;
-  controller.executeHandler = (cells, doc, ctrl) => controllerInstance.executeCells(doc, cells, ctrl);
-  controller.interruptHandler = doc => controllerInstance.interrupt(doc);
+  const controller = vscode.notebooks.createNotebookController(KernelController.id, 'nbts', KernelController.label);
+  controller.supportedLanguages = KernelController.supportedLanguages;
+  controller.executeHandler = (cells, doc, ctrl) => kernelControllerInstance.executeCells(doc, cells, ctrl);
+  controller.interruptHandler = doc => kernelControllerInstance.interrupt(doc);
 
-  const controller2 = vscode.notebooks.createNotebookController(`${DenoNBTSController.id}-jupyter`, 'jupyter-notebook', DenoNBTSController.label);
-  controller2.supportedLanguages = DenoNBTSController.supportedLanguages;
-  controller2.executeHandler = (cells, doc, ctrl) => controllerInstance.executeCells(doc, cells, ctrl);
-  controller2.interruptHandler = doc => controllerInstance.interrupt(doc);
+  const controller2 = vscode.notebooks.createNotebookController(`${KernelController.id}-jupyter`, 'jupyter-notebook', KernelController.label);
+  controller2.supportedLanguages = KernelController.supportedLanguages;
+  controller2.executeHandler = (cells, doc, ctrl) => kernelControllerInstance.executeCells(doc, cells, ctrl);
+  controller2.interruptHandler = doc => kernelControllerInstance.interrupt(doc);
+
+  const controller3 = vscode.notebooks.createNotebookController(REPLController.id, 'nbts', REPLController.label);
+  controller3.supportedLanguages = REPLController.supportedLanguages;
+  controller3.executeHandler = (cells, doc, ctrl) => replControllerInstance.executeCells(doc, cells, ctrl);
+  controller3.interruptHandler = doc => replControllerInstance.interrupt(doc);
+
+  const controller4 = vscode.notebooks.createNotebookController(`${REPLController.id}-jupyter`, 'jupyter-notebook', REPLController.label);
+  controller4.supportedLanguages = REPLController.supportedLanguages;
+  controller4.executeHandler = (cells, doc, ctrl) => replControllerInstance.executeCells(doc, cells, ctrl);
+  controller4.interruptHandler = doc => replControllerInstance.interrupt(doc);
 
   context.subscriptions.push(vscode.commands.registerCommand('deno.kernel.restart', () => {
     if (vscode.window.activeNotebookEditor) {
       vscode.window.showInformationMessage(`Kernel restarted`);
-      controllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
+      kernelControllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
+      replControllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
     }
   }));
 
@@ -274,7 +289,8 @@ export async function activate(
 
 export function deactivate(): Thenable<void> | undefined {
 
-  controllerInstance.killAll();
+  kernelControllerInstance.killAll();
+  replControllerInstance.killAll();
 
   if (!extensionContext.client) {
     return undefined;

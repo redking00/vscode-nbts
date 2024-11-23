@@ -1,23 +1,21 @@
 import * as vscode from "vscode";
 
-import { Session } from './session/session';
+import { REPLSession } from './repl-session/repl-session';
+import { IController } from "../types";
 
-export class DenoNBTSController {
+export class REPLController implements IController {
 
-    public static readonly label = "DenoNBTS";
-    public static readonly id = "deno-nbts-kernel";
+    public static readonly label = "DenoNBTS(repl)";
+    public static readonly id = "deno-nbts-kernel-repl";
     public static readonly supportedLanguages = ["typescript"];
 
-    private context: vscode.ExtensionContext;
-    private sessions = new Map<string, Session>();
-
+    private sessions = new Map<string, REPLSession>();
 
     private onError = (fsPath: string) => this.killSession(fsPath)
 
-    constructor(context: vscode.ExtensionContext) {
-        this.context = context;
+    constructor() {
         setInterval(() => {
-            const closed: [string, Session][] = [...this.sessions.entries()].filter(([_fsPath, session]) => session.isDocumentClosed());
+            const closed: [string, REPLSession][] = [...this.sessions.entries()].filter(([_fsPath, session]) => session.isDocumentClosed());
             closed.forEach(([fsPath, session]) => {
                 session.tryClose();
                 this.sessions.delete(fsPath);
@@ -25,8 +23,8 @@ export class DenoNBTSController {
         }, 1000);
     }
 
-    public static get output() {
-        const value = vscode.window.createOutputChannel("DenoNBTS");
+    public get output() {
+        const value = vscode.window.createOutputChannel("DenoNBTS(kernel)");
         Object.defineProperty(this, "output", { value });
         return value;
     }
@@ -42,7 +40,7 @@ export class DenoNBTSController {
     ): Promise<void> {
         let session = this.sessions.get(doc.uri.fsPath);
         if (!session) {
-            session = new Session(() => this.onError(doc.uri.fsPath), doc, DenoNBTSController.output);
+            session = new REPLSession(() => this.onError(doc.uri.fsPath), doc, this.output);
             this.sessions.set(doc.uri.fsPath, session);
             await session.start();
         }
