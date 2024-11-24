@@ -16,6 +16,8 @@ export class REPLSession implements ISession {
     private proc: ChildProcess;
     private currentExecution?: vscode.NotebookCellExecution;
 
+    private static displayScript = 'display: async function (obj,options) { console.log(`##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##${JSON.stringify(obj[Symbol.for("Jupyter.display")]? (await(obj[Symbol.for("Jupyter.display")])()):obj)}`)}';
+    private static bootScript = `Deno.jupyter = { ${REPLSession.displayScript} };`;
 
     private static lineIsError(line: string): boolean {
         return line.startsWith('Uncaught Error: ')
@@ -56,6 +58,35 @@ export class REPLSession implements ISession {
         return result;
     }
 
+    private static processOutput(data: any) {
+        let results: Record<string, string> = {};
+        if (data.other) {
+            results = {};
+            while (data.other.length > 1) {
+                const mime = data.other.shift();
+                const value = data.other.shift();
+                results[mime] = value;
+            }
+        }
+        else {
+            results = data;
+        }
+        return new vscode.NotebookCellOutput([...Object.keys(results)].map((mime) => {
+            if (mime === "image/svg+xml") {
+                return vscode.NotebookCellOutputItem.text(results[mime], mime);
+            }
+            else if (mime.startsWith("image")) {
+                let buff = Buffer.from(results[mime], 'base64');
+                return new vscode.NotebookCellOutputItem(buff, mime);
+            }
+            else if (mime.includes("json")) {
+                return vscode.NotebookCellOutputItem.json(results[mime], mime);
+            }
+            else {
+                return vscode.NotebookCellOutputItem.text(results[mime], mime);
+            }
+        }));
+    }
 
     private async execute(exec: vscode.NotebookCellExecution): Promise<boolean> {
         this.currentExecution = exec;
@@ -68,7 +99,7 @@ export class REPLSession implements ISession {
         const dataHandler = (data: string) => {
             const rawLines = data.replaceAll('\r\n', '\n').split('\n');
             const filteredLines = rawLines.filter((l) => l !== '\x1b[90mundefined\x1b[39m');
-            const lines = filteredLines.map((l) => AnsiParser.removeAnsi(l));
+            const lines: string[] = filteredLines.map((l) => AnsiParser.removeAnsi(l));
             errors.push(...lines.filter((l: string) => REPLSession.lineIsError(l)));
             let finished = false;
             if (lines.length > 1 && lines[lines.length - 1] === '') {
@@ -78,11 +109,22 @@ export class REPLSession implements ISession {
                 }
             }
             if (lines.length > 0) {
-                this.currentExecution!.appendOutput([
-                    new vscode.NotebookCellOutput([
-                        vscode.NotebookCellOutputItem.stdout(lines.join('\n')),
-                    ])
-                ]);
+                for (const line of lines) {
+                    const index = line.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
+                    if (index === 0) {
+                        const display_data: Record<string, string> = JSON.parse(line.substring(52));
+                        console.log(display_data);
+                        //this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
+                        this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
+                    }
+                    else {
+                        this.currentExecution!.appendOutput([
+                            new vscode.NotebookCellOutput([
+                                vscode.NotebookCellOutputItem.stdout(line)
+                            ])
+                        ]);
+                    }
+                }
             }
             if (finished) {
                 const isOk = errors.length === 0;
@@ -111,7 +153,7 @@ export class REPLSession implements ISession {
     }
 
     public async start() {
-        const { lines, errors } = await this.runCode("'Welcome to the Deno REPL Kernel!'");
+        const { lines, errors } = await this.runCode(REPLSession.bootScript);
         console.log(lines);
         console.log(errors);
         this.started = true;
