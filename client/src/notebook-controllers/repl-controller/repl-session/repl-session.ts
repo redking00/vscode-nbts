@@ -4,7 +4,7 @@ import { ISession } from "../../types";
 import { ChildProcess } from "child_process";
 import { DenoTool } from "../../../tools";
 import { TextEncoder } from "util";
-import * as AnsiParser from "ansi-parser";
+import { parseAnsiSequences } from 'ansi-sequence-parser';
 import { UUID } from "@lumino/coreutils";
 
 
@@ -31,8 +31,8 @@ export class REPLSession implements ISession {
         let errors = [];
         const dataHandler = (data: string) => {
             const rawLines = data.replaceAll('\r\n', '\n').split('\n');
-            const filteredLines = rawLines.filter((l) => l !== '\x1b[90mundefined\x1b[39m');
-            const lines = filteredLines.map((l) => AnsiParser.removeAnsi(l));
+            const lineTokens = rawLines.map((l: string) => parseAnsiSequences(l));
+            const lines = lineTokens.map((tokens) => tokens.map((token) => token.value).join(''));
             errors.push(...lines.filter((l: string) => REPLSession.lineIsError(l)));
             let finished = false;
             if (lines.length > 1 && lines[lines.length - 1] === '') {
@@ -85,7 +85,8 @@ export class REPLSession implements ISession {
         const dataHandler = (data: string) => {
             const rawLines = data.replaceAll('\r\n', '\n').split('\n');
             const filteredLines = rawLines.filter((l) => l !== '\x1b[90mundefined\x1b[39m');
-            const lines: string[] = filteredLines.map((l) => AnsiParser.removeAnsi(l));
+            const lineTokens = filteredLines.map((l: string) => parseAnsiSequences(l));
+            const lines = lineTokens.map((tokens) => tokens.map((token) => token.value).join(''));
             errors.push(...lines.filter((l: string) => REPLSession.lineIsError(l)));
             let finished = false;
             if (lines.length > 1 && lines[lines.length - 1] === '') {
@@ -95,7 +96,7 @@ export class REPLSession implements ISession {
                 }
             }
             if (lines.length > 0) {
-                for (const line of lines) {
+                for (const [lineNumber, line] of lines.entries()) {
                     if (line.length > 0) {
                         const index = line.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
                         if (index === 0) {
@@ -105,7 +106,7 @@ export class REPLSession implements ISession {
                         else {
                             this.currentExecution!.appendOutput([
                                 new vscode.NotebookCellOutput([
-                                    vscode.NotebookCellOutputItem.stdout(line)
+                                    vscode.NotebookCellOutputItem.stdout(filteredLines[lineNumber])
                                 ])
                             ]);
                         }
