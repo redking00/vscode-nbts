@@ -58,19 +58,7 @@ export class REPLSession implements ISession {
         return result;
     }
 
-    private static processOutput(data: any) {
-        let results: Record<string, string> = {};
-        if (data.other) {
-            results = {};
-            while (data.other.length > 1) {
-                const mime = data.other.shift();
-                const value = data.other.shift();
-                results[mime] = value;
-            }
-        }
-        else {
-            results = data;
-        }
+    private static processOutput(results: any) {
         return new vscode.NotebookCellOutput([...Object.keys(results)].map((mime) => {
             if (mime === "image/svg+xml") {
                 return vscode.NotebookCellOutputItem.text(results[mime], mime);
@@ -113,8 +101,6 @@ export class REPLSession implements ISession {
                     const index = line.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
                     if (index === 0) {
                         const display_data: Record<string, string> = JSON.parse(line.substring(52));
-                        console.log(display_data);
-                        //this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
                         this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
                     }
                     else {
