@@ -87,7 +87,7 @@ export async function activate(
 ): Promise<void> {
 
   kernelControllerInstance = new KernelController();
-  replControllerInstance = new REPLController();
+  replControllerInstance = new REPLController(context);
 
   context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
 

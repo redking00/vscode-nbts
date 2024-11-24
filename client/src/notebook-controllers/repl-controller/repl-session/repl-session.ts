@@ -9,15 +9,13 @@ import { UUID } from "@lumino/coreutils";
 
 
 export class REPLSession implements ISession {
+    private context: vscode.ExtensionContext;
     private currentDocument: vscode.NotebookDocument;
     private outputChannel: vscode.OutputChannel;
     private stopped: boolean = false;
     private started: boolean = false;
     private proc: ChildProcess;
     private currentExecution?: vscode.NotebookCellExecution;
-
-    private static displayScript = 'display: async function (obj,options) { console.log(`##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##${JSON.stringify(obj[Symbol.for("Jupyter.display")]? (await(obj[Symbol.for("Jupyter.display")])()):obj)}`)}';
-    private static bootScript = `Deno.jupyter = { ${REPLSession.displayScript} };`;
 
     private static lineIsError(line: string): boolean {
         return line.startsWith('Uncaught Error: ')
@@ -98,17 +96,19 @@ export class REPLSession implements ISession {
             }
             if (lines.length > 0) {
                 for (const line of lines) {
-                    const index = line.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
-                    if (index === 0) {
-                        const display_data: Record<string, string> = JSON.parse(line.substring(52));
-                        this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
-                    }
-                    else {
-                        this.currentExecution!.appendOutput([
-                            new vscode.NotebookCellOutput([
-                                vscode.NotebookCellOutputItem.stdout(line)
-                            ])
-                        ]);
+                    if (line.length > 0) {
+                        const index = line.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
+                        if (index === 0) {
+                            const display_data: Record<string, string> = JSON.parse(line.substring(52));
+                            this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
+                        }
+                        else {
+                            this.currentExecution!.appendOutput([
+                                new vscode.NotebookCellOutput([
+                                    vscode.NotebookCellOutputItem.stdout(line)
+                                ])
+                            ]);
+                        }
                     }
                 }
             }
@@ -126,20 +126,21 @@ export class REPLSession implements ISession {
         return result;
     }
 
-    constructor(onError: () => void, doc: vscode.NotebookDocument, outputChannel: vscode.OutputChannel) {
+    constructor(context: vscode.ExtensionContext, onError: () => void, doc: vscode.NotebookDocument, outputChannel: vscode.OutputChannel) {
+        this.context = context;
         this.currentDocument = doc;
         this.outputChannel = outputChannel;
         const cwd = doc.uri.fsPath.split(path.sep).slice(0, -1).join(path.sep) + path.sep;
-        this.proc = DenoTool.syncLaunch(['repl', '--allow-all'], cwd)!;
+        const bootScriptPath = path.resolve(this.context.extensionPath, 'client', 'src', 'notebook-controllers', 'repl-controller', 'boot', 'boot.ts');
+        this.proc = DenoTool.syncLaunch(['repl', `--eval-file=${bootScriptPath}`, '--allow-all'], cwd)!;
         this.proc!.on("exit", () => {
             if (!this.stopped) onError();
             this.outputChannel.appendLine('\n### DENO EXITED');
         });
-        outputChannel.appendLine(JSON.stringify(this.proc));
     }
 
     public async start() {
-        const { lines, errors } = await this.runCode(REPLSession.bootScript);
+        const { lines, errors } = await this.runCode("'Welcome to Deno repl kernel'");
         console.log(lines);
         console.log(errors);
         this.started = true;

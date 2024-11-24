@@ -20,7 +20,7 @@ export class KernelController implements IController {
                 session.tryClose();
                 this.sessions.delete(fsPath);
             });
-        }, 1000);
+        }, 5000);
     }
 
     public get output() {

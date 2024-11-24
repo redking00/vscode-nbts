@@ -21,5 +21,6 @@ node_modules
 client
 !client/dist/*.js
 !client/package.json
+!client/src/notebook-controllers/repl-controller/boot/
 !client/lsp-server/notebook-lsp.ts
 !client/node_modules/vscode-jsonrpc/

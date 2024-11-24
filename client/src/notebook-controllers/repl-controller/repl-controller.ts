@@ -8,19 +8,20 @@ export class REPLController implements IController {
     public static readonly label = "DenoNBTS(repl)";
     public static readonly id = "deno-nbts-kernel-repl";
     public static readonly supportedLanguages = ["typescript"];
-
+    private context: vscode.ExtensionContext;
     private sessions = new Map<string, REPLSession>();
 
     private onError = (fsPath: string) => this.killSession(fsPath)
 
-    constructor() {
+    constructor(context: vscode.ExtensionContext) {
+        this.context = context;
         setInterval(() => {
             const closed: [string, REPLSession][] = [...this.sessions.entries()].filter(([_fsPath, session]) => session.isDocumentClosed());
             closed.forEach(([fsPath, session]) => {
                 session.tryClose();
                 this.sessions.delete(fsPath);
             });
-        }, 1000);
+        }, 5000);
     }
 
     public get output() {
@@ -40,7 +41,7 @@ export class REPLController implements IController {
     ): Promise<void> {
         let session = this.sessions.get(doc.uri.fsPath);
         if (!session) {
-            session = new REPLSession(() => this.onError(doc.uri.fsPath), doc, this.output);
+            session = new REPLSession(this.context, () => this.onError(doc.uri.fsPath), doc, this.output);
             this.sessions.set(doc.uri.fsPath, session);
             await session.start();
         }

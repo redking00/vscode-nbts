@@ -14,6 +14,7 @@
     "src"
   ],
   "exclude": [
+    "src/notebook-controllers/repl-controller/boot",
     "node_modules",
     ".vscode-test",
     "resources",
