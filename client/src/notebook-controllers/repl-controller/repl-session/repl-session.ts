@@ -1,12 +1,9 @@
 import * as vscode from "vscode";
 import * as path from 'path';
-import { ISession } from "../../types";
-import { ChildProcess } from "child_process";
+import { IPty, ISession } from "../../types";
 import { DenoTool } from "../../../tools";
-import { TextEncoder } from "util";
 import { parseAnsiSequences } from 'ansi-sequence-parser';
 import { UUID } from "@lumino/coreutils";
-
 
 export class REPLSession implements ISession {
     private context: vscode.ExtensionContext;
@@ -14,7 +11,7 @@ export class REPLSession implements ISession {
     private outputChannel: vscode.OutputChannel;
     private stopped: boolean = false;
     private started: boolean = false;
-    private proc: ChildProcess;
+    private proc: IPty;
     private currentExecution?: vscode.NotebookCellExecution;
 
     private static lineIsError(line: string): boolean {
@@ -29,30 +26,41 @@ export class REPLSession implements ISession {
         const executionId = UUID.uuid4();
         let resultLines = [];
         let errors = [];
+        let buffer:string[] = [];
         const dataHandler = (data: string) => {
-            const rawLines = data.replaceAll('\r\n', '\n').split('\n');
+            const parts = data.split(/\r?\n/);
+            if (parts.length === 1) {
+                buffer.push(data);
+                return;
+            }
+            parts[0] = buffer.join('') + parts[0]
+            buffer =  parts.splice(-1);
+            const rawLines = parts;
             const lineTokens = rawLines.map((l: string) => parseAnsiSequences(l));
             const lines = lineTokens.map((tokens) => tokens.map((token) => token.value).join(''));
-            errors.push(...lines.filter((l: string) => REPLSession.lineIsError(l)));
-            let finished = false;
-            if (lines.length > 1 && lines[lines.length - 1] === '') {
-                if (lines[lines.length - 2] === `"${executionId}"`) {
-                    lines.splice(-2, 2);
-                    finished = true;
+            let finished = false
+            for (const l of lines) {
+                const isError = REPLSession.lineIsError(l);
+                const isFinish = l===`"${executionId}"`
+                finished ||= isFinish;
+                if (!isFinish) {
+                    resultLines.push(l);
+                }
+                else if (isError) {
+                    errors.push(l)
                 }
             }
-            resultLines.push(...lines);
             if (finished) {
-                this.proc.stdout!.removeListener("data", dataHandler);
+                dataSub.dispose();
                 resolver({
                     lines: resultLines,
                     errors: errors
                 });
             }
         }
-        this.proc.stdout!.addListener("data", dataHandler);
+        const dataSub = this.proc.onData(dataHandler);
         code += `\n"${executionId}"\n`;
-        this.proc.stdin!.write(new TextEncoder().encode(code));
+        this.proc.write(code);
         return result;
     }
 
@@ -78,52 +86,57 @@ export class REPLSession implements ISession {
         this.currentExecution = exec;
         this.currentExecution.start();
         this.currentExecution.clearOutput();
-        let resolver: (result: boolean) => void;
+        let code = exec.cell.document.getText();
+        let resolver: (result:boolean) => void;
         const result = new Promise<boolean>((resolve) => resolver = resolve);
         const executionId = UUID.uuid4();
         let errors = [];
+        let buffer:string[] = [];
         const dataHandler = (data: string) => {
-            const rawLines = data.replaceAll('\r\n', '\n').split('\n');
+            const parts = data.split(/\r?\n/);
+            if (parts.length === 1) {
+                buffer.push(data);
+                return;
+            }
+            parts[0] = buffer.join('') + parts[0]
+            buffer =  parts.splice(-1);
+            const rawLines = parts;
+            //const lineTokens = rawLines.map((l: string) => parseAnsiSequences(l));
             const filteredLines = rawLines.filter((l) => l !== '\x1b[90mundefined\x1b[39m');
             const lineTokens = filteredLines.map((l: string) => parseAnsiSequences(l));
-            const lines = lineTokens.map((tokens) => tokens.map((token) => token.value).join(''));
-            errors.push(...lines.filter((l: string) => REPLSession.lineIsError(l)));
-            let finished = false;
-            if (lines.length > 1 && lines[lines.length - 1] === '') {
-                if (lines[lines.length - 2] === `"${executionId}"`) {
-                    lines.splice(-2, 2);
-                    finished = true;
-                }
-            }
-            if (lines.length > 0) {
-                for (const [lineNumber, line] of lines.entries()) {
-                    if (line.length > 0) {
-                        const index = line.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
-                        if (index === 0) {
-                            const display_data: Record<string, string> = JSON.parse(line.substring(52));
-                            this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
-                        }
-                        else {
-                            this.currentExecution!.appendOutput([
-                                new vscode.NotebookCellOutput([
-                                    vscode.NotebookCellOutputItem.stdout(filteredLines[lineNumber])
-                                ])
-                            ]);
-                        }
+            const lines:string[] = lineTokens.map((tokens) => tokens.map((token) => token.value).join(''));
+            let finished = false
+            for (const [lineNumber, l] of lines.entries()) {
+                const isError = REPLSession.lineIsError(l);
+                const isFinish = l===`"${executionId}"`
+                finished ||= isFinish;
+                if (!isFinish) {
+                    const index = l.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
+                    if (index === 0) {
+                        const display_data: Record<string, string> = JSON.parse(l.substring(52));
+                        this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
                     }
+                    else {
+                        this.currentExecution!.appendOutput([
+                            new vscode.NotebookCellOutput([
+                                vscode.NotebookCellOutputItem.stdout(filteredLines[lineNumber])
+                            ])
+                        ]);
+                    }
+                }
+                else if (isError) {
+                    errors.push(l)
                 }
             }
             if (finished) {
                 const isOk = errors.length === 0;
-                this.proc.stdout!.removeListener("data", dataHandler);
-                this.currentExecution!.end(isOk);
+                dataSub.dispose();
                 resolver(isOk);
             }
         }
-        this.proc.stdout!.addListener("data", dataHandler);
-        let code = exec.cell.document.getText().replaceAll('\r\n', '\n').trim();
+        const dataSub = this.proc.onData(dataHandler);
         code += `\n"${executionId}"\n`;
-        this.proc.stdin!.write(new TextEncoder().encode(code));
+        this.proc.write(code);
         return result;
     }
 
@@ -133,14 +146,24 @@ export class REPLSession implements ISession {
         this.outputChannel = outputChannel;
         const cwd = doc.uri.fsPath.split(path.sep).slice(0, -1).join(path.sep) + path.sep;
         const bootScriptPath = path.resolve(this.context.extensionPath, 'client', 'src', 'notebook-controllers', 'repl-controller', 'boot', 'boot.ts');
-        this.proc = DenoTool.syncLaunch(['repl', `--eval-file=${bootScriptPath}`, '--allow-all'], cwd)!;
-        this.proc!.on("exit", () => {
+        this.proc = DenoTool.syncLaunchTTY(['repl', `--eval-file=${bootScriptPath}`, '--allow-all'], cwd)!;
+        this.proc.onExit(() => {
             if (!this.stopped) onError();
             this.outputChannel.appendLine('\n### DENO EXITED');
         });
     }
 
     public async start() {
+        let resolver:()=>void;
+        const prom = new Promise<void>(resolve=>resolver = resolve);
+        const dataSub = this.proc.onData((l)=>{
+            console.log(l);
+            if (l.includes('>')) {
+                dataSub.dispose();
+                resolver();
+            } 
+        })
+        await prom;
         const { lines, errors } = await this.runCode("'Welcome to Deno repl kernel'");
         console.log(lines);
         console.log(errors);
