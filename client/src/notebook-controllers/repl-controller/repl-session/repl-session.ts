@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from 'path';
 import { IPty, ISession } from "../../types";
 import { DenoTool } from "../../../tools";
-import { parseAnsiSequences } from 'ansi-sequence-parser';
+import stripAnsi from 'strip-ansi';
 import { EOL } from "os";
 
 export class REPLSession implements ISession {
@@ -34,7 +34,7 @@ export class REPLSession implements ISession {
             parts[0] = buffer.join('') + parts[0];
             buffer = parts.splice(-1);
             onLines(parts);
-            if (buffer.length && buffer[0] === '>\x1b[0K\x1b[3G\x1b[?25h') {
+            if (buffer.length > 0 && stripAnsi(buffer[0]).replaceAll('\r', '') === '> ') {
                 dataSub.dispose();
                 resolver();
             }
@@ -43,7 +43,7 @@ export class REPLSession implements ISession {
     }
 
     private async runCode(code: string, onLines: (lines: string[]) => void): Promise<void> {
-        code = code.split(/\r?\n/).join(EOL);
+        code = code.split(/\r?\n/).join(String.fromCharCode(19));
         let resolver: () => void;
         const dataPromise = new Promise<void>((resolve) => { resolver = resolve; });
         let buffer: string[] = [];
@@ -56,7 +56,7 @@ export class REPLSession implements ISession {
             parts[0] = buffer.join('') + parts[0];
             buffer = parts.splice(-1);
             onLines(parts);
-            if (buffer.length && buffer[0] === '>\x1b[0K\x1b[3G\x1b[?25h') {
+            if (buffer.length > 0 && stripAnsi(buffer[0]).replaceAll('\r', '') === '> ') {
                 dataSub.dispose();
                 resolver();
             }
