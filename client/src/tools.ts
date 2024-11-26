@@ -9,7 +9,7 @@ const spawn: typeof import('node-pty').spawn = requireFunc(moduleName).spawn;
 
 export class DenoTool {
     static syncLaunch(args: string[], cwd: string) {
-        const denoPath: string = vscode.workspace.getConfiguration('deno').get('path') || 'deno';
+        const denoPath: string = vscode.workspace.getConfiguration('deno').get('path') || (process.platform === 'win32' ? 'deno.exe' : 'deno');
         if (!denoPath) {
             vscode.window.showErrorMessage(`No path to deno executable`);
             return;
@@ -17,13 +17,13 @@ export class DenoTool {
         return proc.execFile(denoPath, args, { cwd: cwd });
     }
 
-    static syncLaunchTTY(args: string[], cwd: string) {
-        const denoPath: string = vscode.workspace.getConfiguration('deno').get('path') || 'deno';
+    static syncLaunchPTY(args: string[], cwd: string) {
+        const denoPath: string = vscode.workspace.getConfiguration('deno').get('path') || (process.platform === 'win32' ? 'deno.exe' : 'deno');
         if (!denoPath) {
             vscode.window.showErrorMessage(`No path to deno executable`);
             return;
         }
-        return spawn(denoPath, args, { cwd: cwd });
+        return spawn(denoPath, args, { cwd: cwd, useConpty: false });
     }
 
 }
