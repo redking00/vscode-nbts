@@ -34,7 +34,7 @@ export class REPLSession implements ISession {
             parts[0] = buffer.join('') + parts[0];
             buffer = parts.splice(-1);
             onLines(parts);
-            if (buffer.length > 0 && stripAnsi(buffer[0]).replaceAll('\r', '') === '> ') {
+            if (buffer.length > 0 && stripAnsi(buffer[0]).replaceAll('\r', '').trim() === '>') {
                 dataSub.dispose();
                 resolver();
             }
@@ -56,7 +56,7 @@ export class REPLSession implements ISession {
             parts[0] = buffer.join('') + parts[0];
             buffer = parts.splice(-1);
             onLines(parts);
-            if (buffer.length > 0 && stripAnsi(buffer[0]).replaceAll('\r', '') === '> ') {
+            if (buffer.length > 0 && stripAnsi(buffer[0]).replaceAll('\r', '').trim() === '>') {
                 dataSub.dispose();
                 resolver();
             }
@@ -93,7 +93,7 @@ export class REPLSession implements ISession {
         await this.runCode(code, (lines) => {
             for (const [lineNumber, l] of lines.entries()) {
                 const isError = REPLSession.lineIsError(l);
-                const index = l.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
+                const index = stripAnsi(l).indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
                 if (index === 0) {
                     const display_data: Record<string, string> = JSON.parse(l.substring(52));
                     this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
