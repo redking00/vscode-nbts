@@ -4,6 +4,9 @@ import { IPty, ISession } from "../../types";
 import { DenoTool } from "../../../tools";
 import stripAnsi from 'strip-ansi';
 import { EOL } from "os";
+import { UUID } from "@lumino/coreutils";
+
+const CTRL_S = String.fromCharCode(19);
 
 export class REPLSession implements ISession {
     private context: vscode.ExtensionContext;
@@ -32,36 +35,65 @@ export class REPLSession implements ISession {
                 return;
             }
             parts[0] = buffer.join('') + parts[0];
-            buffer = parts.splice(-1);
+            buffer = parts.slice(-1).length > 0 ? parts.splice(-1) : buffer = [];
             onLines(parts);
-            if (buffer.length > 0 && stripAnsi(buffer[0]).replaceAll('\r', '').trim() === '>') {
-                dataSub.dispose();
-                resolver();
+            if (buffer.length > 0) {
+                this.outputChannel.appendLine(`$$$$$-${buffer[0].length}-[${buffer[0]}]-[${[...buffer[0]].map(s => s.codePointAt(0))}]---`);
+                this.outputChannel.appendLine(stripAnsi(buffer[0]).replaceAll('\r', '').trim());
+                if (stripAnsi(buffer[0]).replaceAll('\r', '').trim() === '>') {
+                    dataSub.dispose();
+                    resolver();
+                }
             }
         });
         return dataPromise;
     }
 
+
     private async runCode(code: string, onLines: (lines: string[]) => void): Promise<void> {
-        code = code.split(/\r?\n/).join(String.fromCharCode(19));
+        code = code.split(/\r?\n/).join(CTRL_S);
+        const executionId = UUID.uuid4();
+        console.log(executionId);
         let resolver: () => void;
         const dataPromise = new Promise<void>((resolve) => { resolver = resolve; });
         let buffer: string[] = [];
+        let isOutput = false;
         const dataSub = this.proc.onData((data) => {
-            const parts = data.split(/\r?\n/);
+            const parts: string[] = data.split(/\r?\n/);
             if (parts.length === 1) {
                 buffer.push(parts[0]);
                 return;
             }
             parts[0] = buffer.join('') + parts[0];
-            buffer = parts.splice(-1);
-            onLines(parts);
-            if (buffer.length > 0 && stripAnsi(buffer[0]).replaceAll('\r', '').trim() === '>') {
-                dataSub.dispose();
-                resolver();
+            buffer = parts.slice(-1).length > 0 ? parts.splice(-1) : buffer = [];
+            if (!isOutput) {
+                const idx = ((partss: string[]): number => {
+                    for (const [i, l] of partss.entries()) {
+                        if (stripAnsi(l).replaceAll('\r', '').includes(`${executionId}`)) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                })(parts);
+                if (idx >= 0) {
+                    isOutput = true;
+                    onLines(parts.slice(idx + 1));
+                }
+            }
+            else {
+                onLines(parts);
+            }
+            if (buffer.length > 0) {
+                this.outputChannel.appendLine(`$$$$$-${buffer[0].length}-[${buffer[0]}]-[${[...buffer[0]].map(s => s.codePointAt(0))}]---`);
+                this.outputChannel.appendLine(stripAnsi(buffer[0]).replaceAll('\r', '').trim());
+                if (stripAnsi(buffer[0]).replaceAll('\r', '').trim() === '>') {
+                    dataSub.dispose();
+                    resolver();
+                }
             }
         });
-        this.proc.write(`${code}${EOL}`);
+        const id = executionId.split('-');
+        this.proc.write(`console.log("${id[0]}"+"-${id[1]}"+"-${id[2]}"+"-${id[3]}"+"-${id[4]}");${CTRL_S}${code}${EOL}`);
         return dataPromise;
     }
 
@@ -86,8 +118,8 @@ export class REPLSession implements ISession {
 
     private async execute(exec: vscode.NotebookCellExecution): Promise<boolean> {
         this.currentExecution = exec;
-        this.currentExecution.start();
-        this.currentExecution.clearOutput();
+        exec.start();
+        exec.clearOutput();
         let code = exec.cell.document.getText();
         let errors: string[] = [];
         await this.runCode(code, (lines) => {
@@ -96,10 +128,10 @@ export class REPLSession implements ISession {
                 const index = stripAnsi(l).indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
                 if (index === 0) {
                     const display_data: Record<string, string> = JSON.parse(l.substring(52));
-                    this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
+                    exec.appendOutput([REPLSession.processOutput(display_data)]);
                 }
                 else {
-                    this.currentExecution!.appendOutput([
+                    exec.appendOutput([
                         new vscode.NotebookCellOutput([
                             vscode.NotebookCellOutputItem.stdout(l)
                         ])
@@ -111,9 +143,10 @@ export class REPLSession implements ISession {
             }
         });
         const isOk = errors.length === 0;
-        this.currentExecution.end(isOk);
+        exec.end(isOk);
         return isOk;
     }
+
 
     constructor(context: vscode.ExtensionContext, onError: () => void, doc: vscode.NotebookDocument, outputChannel: vscode.OutputChannel) {
         this.context = context;
