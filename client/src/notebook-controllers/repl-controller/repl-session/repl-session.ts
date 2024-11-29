@@ -30,7 +30,7 @@ export class REPLSession implements ISession {
         const dataPromise = new Promise<void>((resolve) => { resolver = resolve; });
         let buffer: string[] = [];
         const dataSub = this.proc.onData((data) => {
-            const parts = data.split('\r');
+            const parts = data.split(/[\r\n]/);
             if (parts.length === 1) {
                 buffer.push(parts[0]);
                 return;
@@ -38,19 +38,9 @@ export class REPLSession implements ISession {
             parts[0] = buffer.join('') + parts[0];
             buffer = parts.slice(-1).length > 0 ? parts.splice(-1) : buffer = [];
             onLines(parts);
-            if (buffer[0].length === 4) {
-                if (
-                    buffer[0][0] === String.fromCharCode(27) &&
-                    buffer[0][1] === String.fromCharCode(91) &&
-                    buffer[0][2] === String.fromCharCode(50) &&
-                    buffer[0][3] === String.fromCharCode(67)
-                ) {
-                    const testLine = parts.slice(-1)[0];
-                    if (stripAnsi(testLine).replaceAll('\r', '').trim() === '>') {
-                        dataSub.dispose();
-                        resolver();
-                    }
-                }
+            if (buffer.length && stripAnsi(buffer[0]).trim() === '>') {
+                dataSub.dispose();
+                resolver();
             }
         });
         return dataPromise;
@@ -66,7 +56,7 @@ export class REPLSession implements ISession {
         let buffer: string[] = [];
         let isOutput = false;
         const dataSub = this.proc.onData((data) => {
-            const parts: string[] = data.split('\r');
+            const parts = data.split(/[\r\n]/);
             if (parts.length === 1) {
                 buffer.push(parts[0]);
                 return;
@@ -90,21 +80,9 @@ export class REPLSession implements ISession {
             else {
                 onLines(parts);
             }
-            if (buffer.length === 1) {
-                if (buffer[0].length === 4) {
-                    if (
-                        buffer[0][0] === String.fromCharCode(27) &&
-                        buffer[0][1] === String.fromCharCode(91) &&
-                        buffer[0][2] === String.fromCharCode(50) &&
-                        buffer[0][3] === String.fromCharCode(67)
-                    ) {
-                        const testLine = parts.slice(-1)[0];
-                        if (stripAnsi(testLine).replaceAll('\r', '').trim() === '>') {
-                            dataSub.dispose();
-                            resolver();
-                        }
-                    }
-                }
+            if (buffer.length && stripAnsi(buffer[0]).trim() === '>') {
+                dataSub.dispose();
+                resolver();
             }
         });
         const id = executionId.split('-');
