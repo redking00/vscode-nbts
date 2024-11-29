@@ -8,6 +8,7 @@ import { UUID } from "@lumino/coreutils";
 
 const CTRL_S = String.fromCharCode(19);
 
+
 export class REPLSession implements ISession {
     private context: vscode.ExtensionContext;
     private currentDocument: vscode.NotebookDocument;
@@ -29,7 +30,7 @@ export class REPLSession implements ISession {
         const dataPromise = new Promise<void>((resolve) => { resolver = resolve; });
         let buffer: string[] = [];
         const dataSub = this.proc.onData((data) => {
-            const parts = data.split(/\r?\n/);
+            const parts = data.split('\r');
             if (parts.length === 1) {
                 buffer.push(parts[0]);
                 return;
@@ -37,12 +38,18 @@ export class REPLSession implements ISession {
             parts[0] = buffer.join('') + parts[0];
             buffer = parts.slice(-1).length > 0 ? parts.splice(-1) : buffer = [];
             onLines(parts);
-            if (buffer.length > 0) {
-                this.outputChannel.appendLine(`$$$$$-${buffer[0].length}-[${buffer[0]}]-[${[...buffer[0]].map(s => s.codePointAt(0))}]---`);
-                this.outputChannel.appendLine(stripAnsi(buffer[0]).replaceAll('\r', '').trim());
-                if (stripAnsi(buffer[0]).replaceAll('\r', '').trim() === '>') {
-                    dataSub.dispose();
-                    resolver();
+            if (buffer[0].length === 4) {
+                if (
+                    buffer[0][0] === String.fromCharCode(27) &&
+                    buffer[0][1] === String.fromCharCode(91) &&
+                    buffer[0][2] === String.fromCharCode(50) &&
+                    buffer[0][3] === String.fromCharCode(67)
+                ) {
+                    const testLine = parts.slice(-1)[0];
+                    if (stripAnsi(testLine).replaceAll('\r', '').trim() === '>') {
+                        dataSub.dispose();
+                        resolver();
+                    }
                 }
             }
         });
@@ -59,7 +66,7 @@ export class REPLSession implements ISession {
         let buffer: string[] = [];
         let isOutput = false;
         const dataSub = this.proc.onData((data) => {
-            const parts: string[] = data.split(/\r?\n/);
+            const parts: string[] = data.split('\r');
             if (parts.length === 1) {
                 buffer.push(parts[0]);
                 return;
@@ -83,17 +90,25 @@ export class REPLSession implements ISession {
             else {
                 onLines(parts);
             }
-            if (buffer.length > 0) {
-                this.outputChannel.appendLine(`$$$$$-${buffer[0].length}-[${buffer[0]}]-[${[...buffer[0]].map(s => s.codePointAt(0))}]---`);
-                this.outputChannel.appendLine(stripAnsi(buffer[0]).replaceAll('\r', '').trim());
-                if (stripAnsi(buffer[0]).replaceAll('\r', '').trim() === '>') {
-                    dataSub.dispose();
-                    resolver();
+            if (buffer.length === 1) {
+                if (buffer[0].length === 4) {
+                    if (
+                        buffer[0][0] === String.fromCharCode(27) &&
+                        buffer[0][1] === String.fromCharCode(91) &&
+                        buffer[0][2] === String.fromCharCode(50) &&
+                        buffer[0][3] === String.fromCharCode(67)
+                    ) {
+                        const testLine = parts.slice(-1)[0];
+                        if (stripAnsi(testLine).replaceAll('\r', '').trim() === '>') {
+                            dataSub.dispose();
+                            resolver();
+                        }
+                    }
                 }
             }
         });
         const id = executionId.split('-');
-        this.proc.write(`console.log("${id[0]}"+"-${id[1]}"+"-${id[2]}"+"-${id[3]}"+"-${id[4]}");${CTRL_S}${code}${EOL}`);
+        this.proc.write(`console.log("${id[0]}"+"-${id[1]}"+"-${id[2]}"+"-${id[3]}"+"-${id[4]}");${CTRL_S}${code}\r`);
         return dataPromise;
     }
 
@@ -131,9 +146,10 @@ export class REPLSession implements ISession {
                     exec.appendOutput([REPLSession.processOutput(display_data)]);
                 }
                 else {
+                    const s = l.startsWith(EOL) ? l.split(EOL).slice(1).join(EOL) : l;
                     exec.appendOutput([
                         new vscode.NotebookCellOutput([
-                            vscode.NotebookCellOutputItem.stdout(l)
+                            vscode.NotebookCellOutputItem.stdout(s)
                         ])
                     ]);
                 }
