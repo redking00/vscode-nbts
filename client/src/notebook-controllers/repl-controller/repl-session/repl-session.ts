@@ -38,7 +38,13 @@ export class REPLSession implements ISession {
             parts[0] = buffer.join('') + parts[0];
             buffer = parts.slice(-1).length > 0 ? parts.splice(-1) : buffer = [];
             onLines(parts);
-            if (buffer.length && stripAnsi(buffer[0]).trim() === '>') {
+            if (buffer.length && ((
+                stripAnsi(buffer[0]).trim() === '>') ||
+                (
+                    (stripAnsi(buffer[0]).trim() === '') &&
+                    (stripAnsi(parts.slice(-1)[0]).trim() === '>')
+                )
+            )) {
                 dataSub.dispose();
                 resolver();
             }
@@ -63,24 +69,33 @@ export class REPLSession implements ISession {
             }
             parts[0] = buffer.join('') + parts[0];
             buffer = parts.slice(-1).length > 0 ? parts.splice(-1) : buffer = [];
+            let isFinish = false;
+            let dropLine = false;
+            if (buffer.length) {
+                const cBuff = stripAnsi(buffer[0]).trim();
+                if (cBuff === '>') {
+                    isFinish = true;
+                }
+                else if (cBuff === '' && (stripAnsi(parts.slice(-1)[0]).trim() === '>')) {
+                    isFinish = true;
+                    dropLine = true;
+                }
+            }
             if (!isOutput) {
-                const idx = ((partss: string[]): number => {
-                    for (const [i, l] of partss.entries()) {
-                        if (stripAnsi(l).replaceAll('\r', '').includes(`${executionId}`)) {
-                            return i;
-                        }
-                    }
-                    return -1;
-                })(parts);
+                const idx = parts.findIndex((l) => stripAnsi(l).includes(`${executionId}`));
                 if (idx >= 0) {
                     isOutput = true;
                     onLines(parts.slice(idx + 1));
                 }
+            } else {
+                if (dropLine) {
+                    onLines(parts.slice(0, -1));
+                }
+                else {
+                    onLines(parts);
+                }
             }
-            else {
-                onLines(parts);
-            }
-            if (buffer.length && stripAnsi(buffer[0]).trim() === '>') {
+            if (isFinish) {
                 dataSub.dispose();
                 resolver();
             }
@@ -115,13 +130,25 @@ export class REPLSession implements ISession {
         exec.clearOutput();
         let code = exec.cell.document.getText();
         let errors: string[] = [];
+        let displayData: string[] = [];
         await this.runCode(code, (lines) => {
-            for (const [lineNumber, l] of lines.entries()) {
+            for (const [lineNumber, l] of lines.filter(l => l.length > 0).entries()) {
                 const isError = REPLSession.lineIsError(l);
                 const index = stripAnsi(l).indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
-                if (index === 0) {
-                    const display_data: Record<string, string> = JSON.parse(l.substring(52));
-                    exec.appendOutput([REPLSession.processOutput(display_data)]);
+                const endIndex = stripAnsi(l).indexOf('##ENDDISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
+                let isPushed = false;
+                if (index === 0 || endIndex >= 0) {
+                    if (index === 0) {
+                        displayData.push(stripAnsi(l));
+                        isPushed = true;
+                    }
+                    if (endIndex >= 0) {
+                        if (!isPushed) displayData.push(stripAnsi(l));
+                        const jsonData = displayData.join('').substring(52).replace('##ENDDISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##', '');
+                        const display_data: Record<string, string> = JSON.parse(jsonData);
+                        exec.appendOutput([REPLSession.processOutput(display_data)]);
+                        displayData = [];
+                    }
                 }
                 else {
                     const s = l.startsWith(EOL) ? l.split(EOL).slice(1).join(EOL) : l;

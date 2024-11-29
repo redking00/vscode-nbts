@@ -10,7 +10,7 @@ globalThis.Deno.jupyter = (function () {
 		if (!options.raw) {
 			data = JSON.stringify(data);
 		}
-		console.log(`##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##${JSON.stringify(data)}`);
+		console.log(`##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##${JSON.stringify(data)}##ENDDISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##`);
 	}
 
 	function makeDisplayable(obj: unknown): Deno.jupyter.Displayable {
