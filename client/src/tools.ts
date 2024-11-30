@@ -23,7 +23,7 @@ export class DenoTool {
             vscode.window.showErrorMessage(`No path to deno executable`);
             return;
         }
-        return spawn(denoPath, args, { cwd: cwd, useConpty: false });
+        return spawn(denoPath, args, { cwd: cwd, useConpty: false, cols: 1024, rows: 120 });
     }
 
 }
