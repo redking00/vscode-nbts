@@ -31,8 +31,9 @@ export class REPLSession implements ISession {
             const parts = data.split(/(\r\n|\r|\n)/);
             buffer.push(...parts);
             if (
-                (stripAnsi(parts.slice(-1)[0]).trim() === '>') ||
-                (parts.length > 1 && (stripAnsi(parts.slice(-2)[0]).trim() === '>'))
+                //(stripAnsi(parts.slice(-1)[0]).trim() === '>') ||
+                (parts.length > 1 && (stripAnsi(parts.slice(-2)[0]).trim() === '>')) ||
+                (parts.length > 2 && (stripAnsi(parts.slice(-2)[0]).trim() === '') && (stripAnsi(parts.slice(-3)[0]).trim() === '>'))
             ) {
                 dataSub.dispose();
                 onData(buffer.join(''));
@@ -43,7 +44,7 @@ export class REPLSession implements ISession {
     }
 
 
-    private async runCode(code: string, onDataLines: (dataLines: string[]) => void): Promise<void> {
+    private async runCode(code: string, onDataLine: (dataLines: string) => void): Promise<void> {
         code = code.split(/\r?\n/).join(CTRL_S);
         const executionId = UUID.uuid4();
         let resolver: () => void;
@@ -52,30 +53,36 @@ export class REPLSession implements ISession {
         const buffer: string[] = [];
         const dataSub = this.proc.onData((data) => {
             const parts = data.split(/(\r\n|\r|\n)/);
-            if (!isOutput) {
-                const idx = parts.findIndex((l) => stripAnsi(l).includes(`${executionId}`));
-                if (idx >= 0) {
-                    isOutput = true;
-                    buffer.push(...parts.slice(idx + 1));
+            let isFinish = false;
+            for (const [lineIndex, line] of parts.entries()) {
+                if (!isOutput) {
+                    if (stripAnsi(line).includes(`${executionId}`)) {
+                        isOutput = true;
+                    }
                 }
-            } else {
-                buffer.push(...parts);
+                else {
+                    buffer.push(line);
+                    onDataLine(line);
+                }
+                if (buffer.length > 0) {
+                    if (
+                        //(stripAnsi(buffer.slice(-1)[0]).trim() === '>') ||
+                        (buffer.length > 1 && (stripAnsi(buffer.slice(-2)[0]).trim() === '>')) ||
+                        (buffer.length > 2 && (stripAnsi(buffer.slice(-2)[0]).trim() === '') && (stripAnsi(buffer.slice(-3)[0]).trim() === '>'))
+                    ) {
+                        isFinish = true;
+                    }
+                }
             }
-            if (parts.length > 0) {
-                if (
-                    (stripAnsi(parts.slice(-1)[0]).trim() === '>') ||
-                    (parts.length > 1 && (stripAnsi(parts.slice(-2)[0]).trim() === '>'))
-                ) {
-                    dataSub.dispose();
-                    onDataLines(buffer);
-                    isOutput = false;
-                    buffer.splice(0, buffer.length);
-                    resolver();
-                }
+            if (isFinish) {
+                dataSub.dispose();
+                isOutput = false;
+                buffer.splice(0, buffer.length);
+                resolver();
             }
         });
         const id = executionId.split('-');
-        this.proc.write(`console.log("${id[0]}"+"-${id[1]}"+"-${id[2]}"+"-${id[3]}"+"-${id[4]}\n");${CTRL_S}${code}\r`);
+        this.proc.write(`console.log("${id[0]}"+"-${id[1]}"+"-${id[2]}"+"-${id[3]}"+"-${id[4]}");${CTRL_S}${code}\r`);
         return dataPromise;
     }
 
@@ -104,13 +111,52 @@ export class REPLSession implements ISession {
         exec.clearOutput();
         let code = exec.cell.document.getText();
         const errors: string[] = [];
-        await this.runCode(code, (dataLines) => {
-            errors.push(...dataLines.filter(p => REPLSession.lineIsError(stripAnsi(p))));
-            exec.appendOutput([
-                new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
-                ])
-            ]);
+        const dataLines: string[] = [];
+        const displayData: string[] = [];
+        let isDisplayData = false;
+        let hasOutput = false;
+        let outputs: vscode.NotebookCellOutput[] = [];
+
+
+        await this.runCode(code, async (dataLine) => {
+            if (isDisplayData) {
+                if (stripAnsi(dataLine).trim().startsWith("##ENDDISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##")) {
+                    isDisplayData = false;
+                    const output = REPLSession.processOutput(JSON.parse(displayData.join('')))
+                    outputs.push(output);
+                    await exec.appendOutput([output]);
+                    displayData.splice(0, displayData.length);
+                }
+                else {
+                    displayData.push(stripAnsi(dataLine));
+                }
+            }
+            else {
+                if (stripAnsi(dataLine).trim().startsWith("##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##")) {
+                    isDisplayData = true;
+                    hasOutput = false;
+                    dataLines.splice(0, dataLines.length);
+                }
+                else {
+                    dataLines.push(dataLine);
+                    if (REPLSession.lineIsError(stripAnsi(dataLine))) {
+                        errors.push(dataLine);
+                    }
+                    if (!hasOutput) {
+                        hasOutput = true;
+                        const output = new vscode.NotebookCellOutput([
+                            vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
+                        ])
+                        outputs.push(output);
+                        await exec.appendOutput([output]);
+                    }
+                    else {
+                        exec.replaceOutputItems([
+                            vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
+                        ], outputs.slice(-1)[0]);
+                    }
+                }
+            }
         });
         const isOk = errors.length === 0;
         exec.end(isOk);
