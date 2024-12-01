@@ -164,16 +164,16 @@ export class REPLSession implements ISession {
                         }
                     }
                     else {
-                        if (dataLines.length > 1) {
-                            const dls = dataLines.slice(-2);
-                            exec.replaceOutputItems([
-                                vscode.NotebookCellOutputItem.stdout(dls[0] === '\r\n' && stripAnsi(dls[1]).trim() === '>' ? dataLines.slice(0, -2).join('') : dataLines.join(''))
-                            ], outputs.slice(-1)[0]);
-                        }
-                        else if (dataLines.length > 3) {
+                        if (dataLines.length > 3) {
                             const dlts = dataLines.slice(-4).map(l => stripAnsi(l).trim());
                             exec.replaceOutputItems([
                                 vscode.NotebookCellOutputItem.stdout(dlts[0].length === 0 && dlts[1] === '>' ? dataLines.slice(0, -4).join('') : dataLines.join(''))
+                            ], outputs.slice(-1)[0]);
+                        }
+                        else if (dataLines.length > 1) {
+                            const dls = dataLines.slice(-2);
+                            exec.replaceOutputItems([
+                                vscode.NotebookCellOutputItem.stdout(dls[0] === '\r\n' && stripAnsi(dls[1]).trim() === '>' ? dataLines.slice(0, -2).join('') : dataLines.join(''))
                             ], outputs.slice(-1)[0]);
                         }
                         else {
