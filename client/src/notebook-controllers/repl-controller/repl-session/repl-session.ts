@@ -23,20 +23,27 @@ export class REPLSession implements ISession {
             || line.startsWith('Uncaught ReferenceError: ');
     }
 
-    private ptyAwaitPrompt: (onData: (data: string) => void) => Promise<void> = (onData) => {
+    private ptyAwaitPrompt: (onData?: (data: string) => void) => Promise<void> = (onData) => {
         let resolver: () => void;
         const dataPromise = new Promise<void>((resolve) => { resolver = resolve; });
         const buffer: string[] = [];
         const dataSub = this.proc.onData((data) => {
+            let isFinish = false;
             const parts = data.split(/(\r\n|\r|\n)/);
             buffer.push(...parts);
-            if (
-                //(stripAnsi(parts.slice(-1)[0]).trim() === '>') ||
-                (parts.length > 1 && (stripAnsi(parts.slice(-2)[0]).trim() === '>')) ||
-                (parts.length > 2 && (stripAnsi(parts.slice(-2)[0]).trim() === '') && (stripAnsi(parts.slice(-3)[0]).trim() === '>'))
-            ) {
+            if (onData) onData(data);
+            if (buffer.length > 0) {
+                if (stripAnsi(buffer.slice(-1)[0]).trim() === '>') {
+                    isFinish = true;
+                }
+                else if (buffer.length > 2) {
+                    const endLines = buffer.slice(-3).map(l => stripAnsi(l).trim());
+                    isFinish = endLines[0] === '>' && endLines[1].length === 0 && endLines[2].length === 0;
+                }
+            }
+            if (isFinish) {
                 dataSub.dispose();
-                onData(buffer.join(''));
+                buffer.splice(0, buffer.length);
                 resolver();
             }
         });
@@ -44,7 +51,7 @@ export class REPLSession implements ISession {
     }
 
 
-    private async runCode(code: string, onDataLine: (dataLines: string) => void): Promise<void> {
+    private async runCode(code: string, onDataLine?: (dataLines: string) => void): Promise<void> {
         code = code.split(/\r?\n/).join(CTRL_S);
         const executionId = UUID.uuid4();
         let resolver: () => void;
@@ -54,7 +61,7 @@ export class REPLSession implements ISession {
         const dataSub = this.proc.onData((data) => {
             const parts = data.split(/(\r\n|\r|\n)/);
             let isFinish = false;
-            for (const [lineIndex, line] of parts.entries()) {
+            for (const line of parts) {
                 if (!isOutput) {
                     if (stripAnsi(line).includes(`${executionId}`)) {
                         isOutput = true;
@@ -62,15 +69,15 @@ export class REPLSession implements ISession {
                 }
                 else {
                     buffer.push(line);
-                    onDataLine(line);
+                    if (onDataLine) onDataLine(line);
                 }
                 if (buffer.length > 0) {
-                    if (
-                        //(stripAnsi(buffer.slice(-1)[0]).trim() === '>') ||
-                        (buffer.length > 1 && (stripAnsi(buffer.slice(-2)[0]).trim() === '>')) ||
-                        (buffer.length > 2 && (stripAnsi(buffer.slice(-2)[0]).trim() === '') && (stripAnsi(buffer.slice(-3)[0]).trim() === '>'))
-                    ) {
+                    if (stripAnsi(buffer.slice(-1)[0]).trim() === '>') {
                         isFinish = true;
+                    }
+                    else if (buffer.length > 2) {
+                        const endLines = buffer.slice(-3).map(l => stripAnsi(l).trim());
+                        isFinish = endLines[0] === '>' && endLines[1].length === 0 && endLines[2].length === 0;
                     }
                 }
             }
@@ -119,8 +126,10 @@ export class REPLSession implements ISession {
 
 
         await this.runCode(code, async (dataLine) => {
+            const dl = stripAnsi(dataLine);
+            const dlt = dl.trim();
             if (isDisplayData) {
-                if (stripAnsi(dataLine).trim().startsWith("##ENDDISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##")) {
+                if (dlt.startsWith("##ENDDISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##")) {
                     isDisplayData = false;
                     const output = REPLSession.processOutput(JSON.parse(displayData.join('')))
                     outputs.push(output);
@@ -128,32 +137,44 @@ export class REPLSession implements ISession {
                     displayData.splice(0, displayData.length);
                 }
                 else {
-                    displayData.push(stripAnsi(dataLine));
+                    displayData.push(dl);
                 }
             }
             else {
-                if (stripAnsi(dataLine).trim().startsWith("##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##")) {
+                if (dlt.startsWith("##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##")) {
                     isDisplayData = true;
                     hasOutput = false;
                     dataLines.splice(0, dataLines.length);
                 }
                 else {
                     dataLines.push(dataLine);
-                    if (REPLSession.lineIsError(stripAnsi(dataLine))) {
+                    if (REPLSession.lineIsError(dl)) {
                         errors.push(dataLine);
                     }
                     if (!hasOutput) {
-                        hasOutput = true;
-                        const output = new vscode.NotebookCellOutput([
-                            vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
-                        ])
-                        outputs.push(output);
-                        await exec.appendOutput([output]);
+                        const dlts = stripAnsi(dataLines.join('')).trim();
+                        if (dlts.length > 0) {
+                            dataLines.splice(0, 1);
+                            hasOutput = true;
+                            const output = new vscode.NotebookCellOutput([
+                                vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
+                            ])
+                            outputs.push(output);
+                            await exec.appendOutput([output]);
+                        }
                     }
                     else {
-                        exec.replaceOutputItems([
-                            vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
-                        ], outputs.slice(-1)[0]);
+                        if (dataLines.length > 3) {
+                            const dlts = dataLines.slice(-4).map(l => stripAnsi(l).trim());
+                            exec.replaceOutputItems([
+                                vscode.NotebookCellOutputItem.stdout(dlts[0].length === 0 && dlts[1] === '>' ? dataLines.slice(0, -4).join('') : dataLines.join(''))
+                            ], outputs.slice(-1)[0]);
+                        }
+                        else {
+                            exec.replaceOutputItems([
+                                vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
+                            ], outputs.slice(-1)[0]);
+                        }
                     }
                 }
             }
@@ -171,15 +192,15 @@ export class REPLSession implements ISession {
         const cwd = doc.uri.fsPath.split(path.sep).slice(0, -1).join(path.sep) + path.sep;
         const bootScriptPath = path.resolve(this.context.extensionPath, 'client', 'src', 'notebook-controllers', 'repl-controller', 'boot', 'boot.ts');
         this.proc = DenoTool.syncLaunchPTY(['repl', `--eval-file=${bootScriptPath}`, '--allow-all'], cwd)!;
+        console.log(`PTY-REPL-KERNEL started [${doc.uri.fsPath}]`);
         this.proc.onExit(() => {
             if (!this.stopped) onError();
-            console.log('\n### DENO EXITED');
+            console.log(`PTY-REPL-KERNEL finished [${doc.uri.fsPath}]`);
         });
     }
 
     public async start() {
-        await this.ptyAwaitPrompt((data) => console.log(data));
-        await this.runCode('"Welcome to the REPL kernel (on pty)"', (data) => console.log(data));
+        await this.ptyAwaitPrompt();
         this.started = true;
     }
 
