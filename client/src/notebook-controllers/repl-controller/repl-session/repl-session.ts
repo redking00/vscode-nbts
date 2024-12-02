@@ -1,12 +1,13 @@
 import * as vscode from "vscode";
 import * as path from 'path';
 import { ISession } from "../../types";
-import { ChildProcess } from "child_process";
-import { DenoTool } from "../../../tools";
 import { TextEncoder } from "util";
-import { parseAnsiSequences } from 'ansi-sequence-parser';
+import { DenoTool } from "../../../tools";
+import stripAnsi from 'strip-ansi';
 import { UUID } from "@lumino/coreutils";
+import { ChildProcess } from "child_process";
 
+const CTRL_S = '\r';
 
 export class REPLSession implements ISession {
     private context: vscode.ExtensionContext;
@@ -14,7 +15,7 @@ export class REPLSession implements ISession {
     private outputChannel: vscode.OutputChannel;
     private stopped: boolean = false;
     private started: boolean = false;
-    private proc: ChildProcess;
+    private proc: ChildProcess
     private currentExecution?: vscode.NotebookCellExecution;
 
     private static lineIsError(line: string): boolean {
@@ -23,37 +24,36 @@ export class REPLSession implements ISession {
             || line.startsWith('Uncaught ReferenceError: ');
     }
 
-    private runCode(code: string): Promise<{ lines: string[], errors: string[] }> {
-        let resolver: (result: { lines: string[], errors: string[] }) => void;
-        const result = new Promise<{ lines: string[], errors: string[] }>((resolve) => resolver = resolve);
+    private async runCode(code: string, onDataLine?: (dataLines: string) => void): Promise<void> {
+        code = code.split(/\r?\n/).join(CTRL_S);
         const executionId = UUID.uuid4();
-        let resultLines = [];
-        let errors = [];
-        const dataHandler = (data: string) => {
-            const rawLines = data.replaceAll('\r\n', '\n').split('\n');
-            const lineTokens = rawLines.map((l: string) => parseAnsiSequences(l));
-            const lines = lineTokens.map((tokens) => tokens.map((token) => token.value).join(''));
-            errors.push(...lines.filter((l: string) => REPLSession.lineIsError(l)));
-            let finished = false;
-            if (lines.length > 1 && lines[lines.length - 1] === '') {
-                if (lines[lines.length - 2] === `"${executionId}"`) {
-                    lines.splice(-2, 2);
-                    finished = true;
+        let resolver: () => void;
+        const dataPromise = new Promise<void>((resolve) => { resolver = resolve; });
+        this.proc.stdout?.on("data", (data) => {
+            const parts = data.split(/(\r\n|\r|\n)/);
+            let isFinish = false;
+            for (const line of parts) {
+                const cLine = stripAnsi(line);
+                let pushLine = true;
+                if (!isFinish) {
+                    if (REPLSession.lineIsError(cLine)) {
+                        isFinish = true;
+                    }
+                    else if (cLine.includes(executionId)) {
+                        isFinish = true;
+                        pushLine = false;
+                    }
                 }
+                if (pushLine && onDataLine) onDataLine(line);
             }
-            resultLines.push(...lines);
-            if (finished) {
-                this.proc.stdout!.removeListener("data", dataHandler);
-                resolver({
-                    lines: resultLines,
-                    errors: errors
-                });
+            if (isFinish) {
+                this.proc.stdout?.removeAllListeners();
+                resolver();
             }
-        }
-        this.proc.stdout!.addListener("data", dataHandler);
-        code += `\n"${executionId}"\n`;
+        });
+        code += `${CTRL_S}"${executionId}"\n`;
         this.proc.stdin!.write(new TextEncoder().encode(code));
-        return result;
+        return dataPromise;
     }
 
     private static processOutput(results: any) {
@@ -76,56 +76,67 @@ export class REPLSession implements ISession {
 
     private async execute(exec: vscode.NotebookCellExecution): Promise<boolean> {
         this.currentExecution = exec;
-        this.currentExecution.start();
-        this.currentExecution.clearOutput();
-        let resolver: (result: boolean) => void;
-        const result = new Promise<boolean>((resolve) => resolver = resolve);
-        const executionId = UUID.uuid4();
-        let errors = [];
-        const dataHandler = (data: string) => {
-            const rawLines = data.replaceAll('\r\n', '\n').split('\n');
-            const filteredLines = rawLines.filter((l) => l !== '\x1b[90mundefined\x1b[39m');
-            const lineTokens = filteredLines.map((l: string) => parseAnsiSequences(l));
-            const lines = lineTokens.map((tokens) => tokens.map((token) => token.value).join(''));
-            errors.push(...lines.filter((l: string) => REPLSession.lineIsError(l)));
-            let finished = false;
-            if (lines.length > 1 && lines[lines.length - 1] === '') {
-                if (lines[lines.length - 2] === `"${executionId}"`) {
-                    lines.splice(-2, 2);
-                    finished = true;
+        exec.start();
+        exec.clearOutput();
+        let code = exec.cell.document.getText();
+        const errors: string[] = [];
+        const dataLines: string[] = [];
+        const displayData: string[] = [];
+        let isDisplayData = false;
+        let hasOutput = false;
+        let outputs: vscode.NotebookCellOutput[] = [];
+
+
+        await this.runCode(code, async (dataLine) => {
+            const dl = stripAnsi(dataLine);
+            const dlt = dl.trim();
+            if (isDisplayData) {
+                if (dlt.startsWith("##ENDDISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##")) {
+                    isDisplayData = false;
+                    const output = REPLSession.processOutput(JSON.parse(displayData.join('')))
+                    outputs.push(output);
+                    await exec.appendOutput([output]);
+                    displayData.splice(0, displayData.length);
+                }
+                else {
+                    displayData.push(dl);
                 }
             }
-            if (lines.length > 0) {
-                for (const [lineNumber, line] of lines.entries()) {
-                    if (line.length > 0) {
-                        const index = line.indexOf('##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##');
-                        if (index === 0) {
-                            const display_data: Record<string, string> = JSON.parse(line.substring(52));
-                            this.currentExecution!.appendOutput([REPLSession.processOutput(display_data)]);
+            else {
+                if (dlt.startsWith("##DISPLAYDATA#2d522e5a-4a6c-4aae-b20c-91c5189948d9##")) {
+                    isDisplayData = true;
+                    hasOutput = false;
+                    dataLines.splice(0, dataLines.length);
+                }
+                else {
+                    dataLines.push(dataLine);
+                    if (REPLSession.lineIsError(dl)) {
+                        errors.push(dataLine);
+                    }
+                    if (!hasOutput) {
+                        const dlts = stripAnsi(dataLines.join('')).trim();
+                        if (dlts.length > 0) {
+                            hasOutput = true;
+                            const output = new vscode.NotebookCellOutput([
+                                vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
+                            ])
+                            outputs.push(output);
+                            await exec.appendOutput([output]);
                         }
-                        else {
-                            this.currentExecution!.appendOutput([
-                                new vscode.NotebookCellOutput([
-                                    vscode.NotebookCellOutputItem.stdout(filteredLines[lineNumber])
-                                ])
-                            ]);
-                        }
+                    }
+                    else {
+                        exec.replaceOutputItems([
+                            vscode.NotebookCellOutputItem.stdout(dataLines.join(''))
+                        ], outputs.slice(-1)[0]);
                     }
                 }
             }
-            if (finished) {
-                const isOk = errors.length === 0;
-                this.proc.stdout!.removeListener("data", dataHandler);
-                this.currentExecution!.end(isOk);
-                resolver(isOk);
-            }
-        }
-        this.proc.stdout!.addListener("data", dataHandler);
-        let code = exec.cell.document.getText().replaceAll('\r\n', '\n').trim();
-        code += `\n"${executionId}"\n`;
-        this.proc.stdin!.write(new TextEncoder().encode(code));
-        return result;
+        });
+        const isOk = errors.length === 0;
+        exec.end(isOk);
+        return isOk;
     }
+
 
     constructor(context: vscode.ExtensionContext, onError: () => void, doc: vscode.NotebookDocument, outputChannel: vscode.OutputChannel) {
         this.context = context;
@@ -141,9 +152,7 @@ export class REPLSession implements ISession {
     }
 
     public async start() {
-        const { lines, errors } = await this.runCode("'Welcome to Deno repl kernel'");
-        console.log(lines);
-        console.log(errors);
+        await this.runCode("console.log('Welcome to Deno repl kernel');");
         this.started = true;
     }
 
