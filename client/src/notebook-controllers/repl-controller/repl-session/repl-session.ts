@@ -19,9 +19,7 @@ export class REPLSession implements ISession {
     private currentExecution?: vscode.NotebookCellExecution;
 
     private static lineIsError(line: string): boolean {
-        return line.startsWith('Uncaught Error: ')
-            || line.startsWith('Uncaught TypeError: ')
-            || line.startsWith('Uncaught ReferenceError: ');
+        return line.match(/^Uncaught (.*)Error:/) !== null;
     }
 
     private async runCode(code: string, onDataLine?: (dataLines: string) => void): Promise<void> {
