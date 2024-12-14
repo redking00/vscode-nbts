@@ -4,7 +4,7 @@
   "description": "Visual Studio Code plugin for Deno lsp support on notebooks (+ NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
@@ -378,6 +378,7 @@
           ]
         },
         "deno.future": {
+          "deprecationMessage": "Deno 2.0 has been released. This setting still affects 1.x.x installations, however.",
           "type": "boolean",
           "markdownDescription": "Enable breaking features likely to be shipped in Deno 2.0.",
           "default": false,
