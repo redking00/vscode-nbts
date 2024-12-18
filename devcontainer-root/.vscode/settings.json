@@ -1,4 +1,3 @@
 {
-	"deno.enable": true,
-	"typescript.validate.enable": false
+	"deno.enable": true
 }

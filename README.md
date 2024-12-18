@@ -26,7 +26,7 @@ Just install the extension, look at the releases section. No need for Jupyter or
 
 > ⚠️ **Important:**
 > Remember deno.enable:true in the workspace that contains the notebooks. The best way is to use the command _Deno: Initialize
-Workspace Configuration_ (adds some more configuration besides deno.enable).
+Workspace Configuration_.
 
 
 Rename any .ts file to .nb.ts to get started. You can also start with an empty file: 
