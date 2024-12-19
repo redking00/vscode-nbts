@@ -4,7 +4,7 @@
   "description": "Visual Studio Code plugin for Deno lsp support on notebooks (+ NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
@@ -871,7 +871,8 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm i && npm run esbuild-plugin && npm i && npm run plugin-copy && npm run esbuild-base",
+    "build-vsix": "vsce package --follow-symlinks",
+    "vscode:prepublish": "npm i && npm run esbuild-plugin && npm i && npm run esbuild-base",
     "esbuild-base": "esbuild ./client/src/extension.ts --bundle --outfile=client/dist/main.js --external:vscode --external:zeromq --format=cjs --platform=node",
     "esbuild-plugin": "esbuild ./typescript-deno-plugin/src/index.ts --bundle --outfile=typescript-deno-plugin/dist/index.js --external:vscode --format=cjs --platform=node",
     "esbuild": "npm run esbuild-plugin -- --sourcemap && npm run plugin-copy && npm run esbuild-base -- --sourcemap",
