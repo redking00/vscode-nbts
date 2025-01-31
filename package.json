@@ -4,7 +4,7 @@
   "description": "Visual Studio Code plugin for Deno lsp support on notebooks (+ NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
@@ -875,19 +875,18 @@
     "vscode:prepublish": "npm i && npm run esbuild-plugin && npm i && npm run esbuild-base",
     "esbuild-base": "esbuild ./client/src/extension.ts --bundle --outfile=client/dist/main.js --external:vscode --external:zeromq --format=cjs --platform=node",
     "esbuild-plugin": "esbuild ./typescript-deno-plugin/src/index.ts --bundle --outfile=typescript-deno-plugin/dist/index.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run esbuild-plugin -- --sourcemap && npm run plugin-copy && npm run esbuild-base -- --sourcemap",
-    "plugin-copy": "copy-folder typescript-deno-plugin node_modules/typescript-deno-plugin",
+    "esbuild": "npm run esbuild-plugin -- --sourcemap && npm run esbuild-base -- --sourcemap",
     "test-compile": "tsc -b",
     "fmt": "deno fmt .vscode .github client/src media schemas typescript-deno-plugin/src typescript-deno-plugin/*.md docs package.json tsconfig.json README.md CHANGELOG.md",
     "lint": "deno lint --unstable client/src typescript-deno-plugin/src docs",
     "postinstall": "cd typescript-deno-plugin && npm i && cd ../client && npm i && cd .."
   },
   "dependencies": {
-    "zeromq": "6.0.8"
+    "zeromq": "6.0.8",
+    "typescript-deno-plugin": "./typescript-deno-plugin"
   },
   "devDependencies": {
     "@types/node": "^14.14.25",
-    "copy-folder-util": "^1.1.4",
     "esbuild": "^0.14.23",
     "typescript": "^5.0.2"
   }
