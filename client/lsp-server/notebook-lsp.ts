@@ -99,7 +99,8 @@ const onIdeRequest = async (data: any) => {
   else if (
     data.method === 'textDocument/foldingRange' ||
     data.method === 'textDocument/codeLens' ||
-    data.method === 'textDocument/semanticTokens/full'
+    data.method === 'textDocument/semanticTokens/full' ||
+    data.method === 'textDocument/formatting'
   ) {
     const notebook = getNotebookByTextDocumentUri(data.params.textDocument.uri);
     if (notebook !== undefined) {
@@ -312,6 +313,26 @@ const onDenoResponse = async (req: PendingRequest | undefined, data: any) => {
         }
       }
     }
+    else if (req && (req.method === 'textDocument/formatting')) {
+      if (data.result && data.result.length > 0) {
+        const tdUri = (req.params as any).textDocument.uri;
+        if (tdUri) {
+          const notebook = getNotebookByTextDocumentUri(tdUri);
+          if (notebook) {
+            const td = notebook.textDocuments.find(d => d.uri === tdUri);
+            if (td) {
+              const startLine = getStartLine(notebook, tdUri)!;
+              data.result = data.result.map((r: any) => {
+                r.range.start.line -= startLine;
+                r.range.end.line -= startLine;
+                return r;
+              }).filter((r: any) => r.range.start.line >= 0 && r.range.start.line < (td.lines.length));
+            }
+          }
+        }
+      }
+    }
+
   }
   await ideIn.write(data);
 }
