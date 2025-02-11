@@ -19,11 +19,9 @@ import * as vscode from "vscode";
 import { registerSidebar } from "./tasks_sidebar";
 
 import { NBTSSerializer } from './notebook-serializers/nbts-serializer/nbts-serializer';
-import { KernelController } from './notebook-controllers/kernel-controller/kernel-controller';
 import { REPLController } from './notebook-controllers/repl-controller/repl-controller';
 
 
-let kernelControllerInstance: KernelController;
 let replControllerInstance: REPLController;
 
 function handleConfigurationChange(event: vscode.ConfigurationChangeEvent) {
@@ -86,32 +84,14 @@ export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
 
-  kernelControllerInstance = new KernelController();
   replControllerInstance = new REPLController(context);
 
   context.subscriptions.push(vscode.workspace.registerNotebookSerializer('nbts', new NBTSSerializer()));
-
-  const controller1 = vscode.notebooks.createNotebookController(KernelController.id, 'nbts', KernelController.label);
-  controller1.supportedLanguages = KernelController.supportedLanguages;
-  controller1.interruptHandler = doc => kernelControllerInstance.interrupt(doc);
-  controller1.executeHandler = (cells, doc, ctrl) => {
-    replControllerInstance.killSession(doc.uri.fsPath);
-    return kernelControllerInstance.executeCells(doc, cells, ctrl)
-  };
-
-  const controller2 = vscode.notebooks.createNotebookController(`${KernelController.id}-jupyter`, 'jupyter-notebook', KernelController.label);
-  controller2.supportedLanguages = KernelController.supportedLanguages;
-  controller2.interruptHandler = doc => kernelControllerInstance.interrupt(doc);
-  controller2.executeHandler = (cells, doc, ctrl) => {
-    replControllerInstance.killSession(doc.uri.fsPath);
-    return kernelControllerInstance.executeCells(doc, cells, ctrl)
-  };
 
   const controller3 = vscode.notebooks.createNotebookController(REPLController.id, 'nbts', REPLController.label);
   controller3.supportedLanguages = REPLController.supportedLanguages;
   controller3.interruptHandler = doc => replControllerInstance.interrupt(doc);
   controller3.executeHandler = (cells, doc, ctrl) => {
-    kernelControllerInstance.killSession(doc.uri.fsPath);
     return replControllerInstance.executeCells(doc, cells, ctrl)
   };
 
@@ -119,14 +99,12 @@ export async function activate(
   controller4.supportedLanguages = REPLController.supportedLanguages;
   controller4.interruptHandler = doc => replControllerInstance.interrupt(doc);
   controller4.executeHandler = (cells, doc, ctrl) => {
-    kernelControllerInstance.killSession(doc.uri.fsPath);
     return replControllerInstance.executeCells(doc, cells, ctrl)
   };
 
   context.subscriptions.push(vscode.commands.registerCommand('deno.kernel.restart', () => {
     if (vscode.window.activeNotebookEditor) {
       vscode.window.showInformationMessage(`Kernel restarted`);
-      kernelControllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
       replControllerInstance.killSession(vscode.window.activeNotebookEditor.notebook.uri.fsPath);
     }
   }));
@@ -328,7 +306,6 @@ export async function activate(
 
 export function deactivate(): Thenable<void> | undefined {
 
-  kernelControllerInstance.killAll();
   replControllerInstance.killAll();
 
   if (!extensionContext.client) {
