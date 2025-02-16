@@ -1,3 +1,4 @@
 {
-	"deno.enable": true
+	"deno.enable": true,
+	"deno.path": "/home/codespace/.deno/bin/deno"
 }
