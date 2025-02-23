@@ -75,6 +75,11 @@ const cp = new Deno.Command(Deno.execPath(), {
   env: JSON.parse(Deno.args[0]) as any
 }).spawn();
 
+(async function waitForCPExit() {
+  await cp.status;
+  Deno.exit(0);
+})();
+
 
 const denoOut = new StreamMessageReader(NodeStream.Readable.fromWeb(cp.stdout as any));
 const denoIn = new StreamMessageWriter(NodeStream.Writable.fromWeb(cp.stdin));
@@ -121,10 +126,6 @@ const onIdeRequest = async (data: any) => {
     }
   }
   await denoIn.write(data);
-  if (data.method === 'shutdown') {
-    cp.kill();
-    Deno.exit(0);
-  }
 }
 
 const onIdeResponse = async (data: any) => {
@@ -247,6 +248,10 @@ const onDenoRequest = async (data: any) => {
 
 const onDenoResponse = async (req: PendingRequest | undefined, data: any) => {
   if (req) {
+    if (req.method === 'shutdown') {
+      await ideIn.write(data);
+      cp.kill();
+    }
     if (req.method === 'initialize') {
       data.result.capabilities.notebookDocumentSync = {
         notebookSelector: [
