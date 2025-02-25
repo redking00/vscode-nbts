@@ -4,7 +4,7 @@
   "author": "Deno Land Inc.",
   "license": "MIT",
   "private": true,
-  "version": "3.43.3",
+  "version": "3.43.4",
   "publisher": "deno-land",
   "repository": {
     "type": "git",
@@ -17,6 +17,8 @@
     "@jupyterlab/nbformat": "^4.2.5",
     "@lumino/coreutils": "^2.2.0",
     "strip-ansi": "^7.1.0",
+    "@types/diff": "^7.0.1",
+    "diff": "^7.0.0",
     "dotenv": "^16.4.5",
     "jsonc-parser": "^3.2.0",
     "semver": "7.5.2",
