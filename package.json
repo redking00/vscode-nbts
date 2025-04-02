@@ -4,7 +4,7 @@
   "description": "Visual Studio Code plugin for Deno lsp support on notebooks (+ NBTS serializer + DenoNBTS kernel)",
   "author": "redking00 & Deno Land Inc.",
   "license": "MIT",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "icon": "deno.png",
   "galleryBanner": {
     "color": "#3B3738",
