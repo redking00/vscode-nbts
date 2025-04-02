@@ -17,6 +17,7 @@ import * as util from "util";
 
 import * as vscode from "vscode";
 import { registerSidebar } from "./tasks_sidebar";
+import { getDenoInfoJson } from "./util";
 
 import { NBTSSerializer } from './notebook-serializers/nbts-serializer/nbts-serializer';
 import { KernelController } from './notebook-controllers/kernel-controller/kernel-controller';
@@ -134,6 +135,9 @@ export async function activate(
 
   extensionContext.outputChannel = extensionContext.outputChannel ??
     vscode.window.createOutputChannel(LANGUAGE_CLIENT_NAME);
+  extensionContext.denoInfoJson = await getDenoInfoJson(
+    extensionContext.outputChannel,
+  );
   const p2cMap = new Map<string, string>();
   extensionContext.clientOptions = {
     documentSelector: [
@@ -283,6 +287,7 @@ export async function activate(
       enableSettingsUnscoped: extensionContext.enableSettingsUnscoped,
       enableSettingsByFolder: extensionContext.enableSettingsByFolder,
       scopesWithDenoJson: Array.from(extensionContext.scopesWithDenoJson ?? []),
+      npmCache: extensionContext.denoInfoJson?.npmCache ?? null,
     };
   });
 
